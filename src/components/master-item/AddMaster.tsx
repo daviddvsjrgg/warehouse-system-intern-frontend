@@ -164,7 +164,7 @@ const AddMaster: React.FC = () => {
       <div className='flex justify-start'>
         <input 
           type="file" 
-          className="file-input file-input-bordered file-input-sm w-full max-w-xs file-input-success" 
+          className="file-input file-input-bordered file-input-sm w-full max-w-xs" 
           accept=".xlsx, .xls"
           onChange={handleFileChange} // Handle file change
         />

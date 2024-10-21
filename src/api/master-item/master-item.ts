@@ -34,6 +34,24 @@ interface ItemBatch {
   barcode_sn: string;
 }
 
+// ItemDetails interface for individual item representation
+export interface ItemDetails {
+  id: number; // Unique identifier for the item
+  barcode_sn: string; // Barcode serial number
+  nama_barang: string; // Name of the item
+  sku: string; // Stock Keeping Unit
+  created_at: string; // Creation timestamp
+  updated_at: string; // Last updated timestamp
+}
+
+// ApiResponse interface for the overall API response structure
+export interface ApiResponse {
+  status_code: number; // HTTP status code
+  success: boolean; // Indicates whether the request was successful
+  message: string; // Response message from the API
+  data: ItemDetails[]; // Array of items returned from the API
+}
+
 // Function to fetch master items with pagination and optional search query
 export const fetchMasterItems = async (page: number, query: string = '', per_page: number): Promise<PaginatedResponse> => {
   const cookies = parseCookies(); // This retrieves all cookies as an object
@@ -120,4 +138,30 @@ export const deleteMasterItem = async (id: number): Promise<{ success: boolean; 
   );
 
   return response.data;
+};
+
+export const fetchMasterItemBySku = async (sku: string): Promise<ItemDetails> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const response = await api.get<ApiResponse>(
+    `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}?query=${sku}&exact=true`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const { status_code, success, message, data } = response.data;
+
+  if (!success || status_code !== 200 || !data || data.length === 0) {
+    throw new Error(`Item with SKU "${sku}" not found: ${message}`);
+  }
+
+  return data[0]; // Return the first (and ideally only) item
 };

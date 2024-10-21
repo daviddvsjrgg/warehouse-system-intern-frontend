@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import Navbar from '@/components/Navbar'
-import React, { useEffect } from 'react'
+import TableReport from '@/components/report/TableReport';
+import Navbar from '@/components/Navbar';
+import React, { useEffect } from 'react';
 
 const Page = () => {
   useEffect(() => {
@@ -11,12 +12,20 @@ const Page = () => {
     // Store the current path in localStorage
     localStorage.setItem('onUrl', currentPath);
   }, []); // Empty dependency array to run this effect only once when the component mounts
+
   return (
     <div>
       <Navbar />
-      <h1>Report</h1>
+      <div className='px-6 py-4 '>
+        <div className="card shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">Report Item Barang</h2>
+            <TableReport />
+          </div>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;
