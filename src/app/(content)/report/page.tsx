@@ -1,9 +1,9 @@
 "use client"
 
-import Navbar from "@/components/Navbar";
-import { useEffect } from "react";
+import Navbar from '@/components/Navbar'
+import React, { useEffect } from 'react'
 
-const Home = () => {
+const Page = () => {
   useEffect(() => {
     // Get the current URL path after the domain (window.location.pathname)
     const currentPath = window.location.pathname;
@@ -14,8 +14,9 @@ const Home = () => {
   return (
     <div>
       <Navbar />
+      <h1>Report</h1>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Page
