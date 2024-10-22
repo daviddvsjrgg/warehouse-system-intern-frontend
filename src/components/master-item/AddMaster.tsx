@@ -81,45 +81,41 @@ const AddMaster: React.FC = () => {
   // Function to handle Excel import
   const handleImport = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+  
     if (!file) {
       setError('Please upload an Excel file first.');
       return;
     }
-
+  
     setIsImporting(true); // Disable the button when importing
-
+  
     try {
       const data = await file.arrayBuffer(); // Read file as ArrayBuffer
-      const workbook = XLSX.read(data); // Parse the ArrayBuffer as Excel
+      const workbook = XLSX.read(data, { type: 'array' }); // Parse the ArrayBuffer as Excel
       const sheetName = workbook.SheetNames[0]; // Get the first sheet name
       const worksheet = workbook.Sheets[sheetName]; // Get the first sheet
       const jsonData: ExcelItem[] = XLSX.utils.sheet_to_json<ExcelItem>(worksheet); // Convert sheet to JSON with types
-
-      // Prepare items to add from the parsed data
+  
+      // Ensure the Excel file has the expected columns
       const itemsToAdd = jsonData.map(item => ({
-        sku: item.SKU, // Adjust according to your Excel column names
-        nama_barang: item['Nama Barang'], // Adjust according to your Excel column names
-        barcode_sn: Math.random().toString(36).substring(2, 2 + 5), // Generate random barcodes
+        sku: item?.SKU ?? 'Unknown SKU', // Optional chaining and fallback
+        nama_barang: item?.['Nama Barang'] ?? 'Unknown Name', // Optional chaining and fallback
+        barcode_sn: Math.random().toString(36).substring(2, 7), // Generate random barcodes
       }));
-
-      // Call addMasterItems with the items to add
-      await addMasterItems(itemsToAdd);
+  
+      await addMasterItems(itemsToAdd); // Add items to the master list
+  
       setSuccess('Item(s) added successfully! Please refresh the table if necessary.');
-      setTimeout(() => {
-        setSuccess('');
-      }, 6000);
-
+      setTimeout(() => setSuccess(''), 6000); // Clear success message after 6 seconds
+  
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Unexpected error occurred while importing data.');
-      }
+      setError(error instanceof Error ? error.message : 'Unexpected error occurred while importing data.');
     } finally {
       setIsImporting(false); // Re-enable the button after import attempt
       setFile(null); // Reset the file state after import
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
