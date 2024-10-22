@@ -83,6 +83,6 @@ export const getUserIdFromToken = async (token: string): Promise<number> => {
     });
     return response.data.id; // Assuming the user ID is available in response.data.id
   } catch (error) {
-    throw new Error('Failed to fetch user ID from token');
+    throw new Error('Failed to fetch user ID from token' + error);
   }
 };

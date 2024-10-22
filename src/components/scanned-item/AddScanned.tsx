@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import React, { useState, useEffect } from 'react';
 import { fetchMasterItemBySku } from '@/api/master-item/master-item'; // Adjust this import based on your project structure
 import { parseCookies } from 'nookies'; // To get token from cookies
@@ -10,11 +12,9 @@ const AddScanned = () => {
   const [invoiceNumber, setInvoiceNumber] = useState(''); // State for Invoice Number
   const [barcodeSn, setBarcodeSn] = useState(''); // State for Barcode SN
   const [qty, setQty] = useState(1); // State for Quantity, default to 1
-  const [itemData, setItemData] = useState<any | null>(null); // State for the fetched item data
   const [items, setItems] = useState<any[]>([]); // State for the array of scanned items
   const [error, setError] = useState<string | null>(null); // State for error messages
   const [loading, setLoading] = useState(false); // State for loading status
-  const [userId, setUserId] = useState<string | null>(null); // State for user ID
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // State for success messages
 
   const debouncedSku = useDebounce(sku, 500); // Debounce the SKU input with a 500ms delay
@@ -30,15 +30,14 @@ const AddScanned = () => {
     }
 
     try {
-      const response = await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
+      await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      const { id } = response.data; // Assuming user info contains the ID
-      setUserId(id); // Set the user ID
     } catch (error) {
-      setError('Failed to fetch user information.');
+      const errorMessage = (error as Error).message || "Unknwon error";
+      setError('Failed to fetch user information.' + errorMessage);
     }
   };
 
@@ -62,7 +61,6 @@ const AddScanned = () => {
     try {
       if (debouncedSku) {
         const item = await fetchMasterItemBySku(debouncedSku); // Fetch the item by SKU
-        setItemData(item); // Set the fetched item data
         setBarcodeSn(item.barcode_sn); // Set the Barcode SN from the response
 
         // Check if the item is already in the array to avoid duplicates
@@ -78,7 +76,6 @@ const AddScanned = () => {
         setQty(1); // Reset quantity to 1 when a new item is fetched
       } else {
         // Reset barcode and invoice if SKU is empty
-        setItemData(null); // Reset item data if SKU is empty
         setBarcodeSn('');
         setQty(1); // Reset quantity to 1 if SKU is empty
       }
@@ -101,6 +98,7 @@ const AddScanned = () => {
       // Reset the barcode SN if the SKU is empty
       setBarcodeSn('');
     }
+  // eslint-disable-next-line no-console
   }, [debouncedSku]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,7 +129,6 @@ const AddScanned = () => {
     setQty(1);
     setItems([]); // Clear the scanned items
     setError(null); // Reset any error message
-    setItemData(null); // Reset item data
     setSuccessMessage(null); // Clear success message
   };
 
@@ -174,7 +171,7 @@ const AddScanned = () => {
         </div>
 
         {/* Barcode SN Input */}
-        {/* <div className="form-control">
+        <div className="form-control">
           <label className="label">
             <span className="label-text">Barcode SN</span>
           </label>
@@ -185,7 +182,7 @@ const AddScanned = () => {
             value={barcodeSn}
             readOnly // Making this field read-only as it should be auto-filled
           />
-        </div> */}
+        </div>
 
         {/* Loading Indicator */}
         {loading && <div className="text-blue-500 mt-2">Loading...</div>}

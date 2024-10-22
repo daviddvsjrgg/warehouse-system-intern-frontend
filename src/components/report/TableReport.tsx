@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchScannedItems, FetchScannedItem } from '@/api/scanned-item/scanned-item'; // Import your fetch function
+import { fetchScannedItems, FetchScannedItem } from '@/api/scanned-item/scanned-item';
+import Image from 'next/image';
 
 const TableReport: React.FC = () => {
   const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]); // State for scanned items
@@ -12,8 +13,9 @@ const TableReport: React.FC = () => {
       try {
         const items = await fetchScannedItems(1); // Fetch items from page 1
         setScannedItems(items); // Set the fetched items in state
-      } catch (err: any) {
-        setError(err.message || 'Failed to load data'); // Set error if any
+      } catch (error) {
+        const errorMessage = (error as Error).message || "Unkown Error";
+        setError(errorMessage || 'Failed to load data'); // Set error if any
       } finally {
         setLoading(false); // Set loading to false after fetching
       }
@@ -65,9 +67,13 @@ const TableReport: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="avatar">
                     <div className="mask mask-squircle h-12 w-12">
-                      <img
+                      <Image
                         src="https://img.daisyui.com/images/profile/demo/2@94.webp" // Example avatar
                         alt="User Avatar"
+                        width={94} // Add the appropriate width
+                        height={94} // Add the appropriate height
+                        layout="fixed" // Use a fixed layout since you have width and height
+                        priority={true} // Optional: Ensures image loads fast
                       />
                     </div>
                   </div>

@@ -55,6 +55,7 @@ export interface ApiResponse {
 export const fetchScannedItems = async (page: number = 1): Promise<FetchScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token;
+  console.log(page)
 
   if (!token) {
     throw new Error('No token found');
@@ -73,15 +74,14 @@ export const fetchScannedItems = async (page: number = 1): Promise<FetchScannedI
 
     // Return the scanned items data from the API response
     return response.data.data.data; // Accessing the data array inside the response
-  } catch (error: any) {
-    console.error('Error details:', error.response?.data);
-    const errorMessage = error.response?.data?.message || 'Error fetching scanned items';
+  } catch (error) {
+    const errorMessage = (error as Error).message || "Unkown Error";
     throw new Error(errorMessage);
   }
 };
 
 // Function to submit scanned items
-export const addScannedItems = async (items: { id: number; sku: string; invoiceNumber: string; qty: number }[]): Promise<any[]> => {
+export const addScannedItems = async (items: { id: number; sku: string; invoiceNumber: string; qty: number }[]): Promise<ScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token; // Get token from cookies
 
@@ -116,9 +116,8 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
     );
 
     return response.data; // Returns an array of inserted items or confirmation
-  } catch (error: any) {
-    console.error('Error details:', error.response?.data); // Log the server's response for debugging
-    const errorMessage = error.response?.data?.message || 'Error submitting scanned items';
+  } catch (error) {
+    const errorMessage = (error as Error).message || "Unknown Error";
     throw new Error(errorMessage);
   }
 };
