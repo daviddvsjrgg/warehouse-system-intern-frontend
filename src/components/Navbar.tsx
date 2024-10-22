@@ -1,23 +1,18 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { logoutUser } from '@/api/auth/auth';
 import Link from 'next/link';
 
 const Navbar = () => {
   const router = useRouter();
-  const [activeLink, setActiveLink] = useState('');  // State to track the active link
+  const pathname = usePathname();  // Get current pathname
 
-  // Helper function to apply the gray background if the link matches the current active link
+  // Helper function to apply the gray background if the link matches the current pathname
   const getLinkClass = (href: string) => {
-    return href === activeLink ? 'bg-gray-300' : '';
-  };
-
-  // Function to handle the link click and set the active link
-  const handleLinkClick = (href: string) => {
-    setActiveLink(href);
+    return href === pathname ? 'bg-gray-300' : '';
   };
 
   // Function to handle logout
@@ -58,7 +53,6 @@ const Navbar = () => {
               <Link 
                 href='/master-item'
                 className={getLinkClass('/master-item')}
-                onClick={() => handleLinkClick('/master-item')}
               >
                 Master Item
               </Link>
@@ -67,7 +61,6 @@ const Navbar = () => {
               <Link 
                 href='/scanned-item'
                 className={getLinkClass('/scanned-item')}
-                onClick={() => handleLinkClick('/scanned-item')}
               >
                 Scan SN
               </Link>
@@ -76,7 +69,6 @@ const Navbar = () => {
               <Link 
                 href='/report'
                 className={getLinkClass('/report')}
-                onClick={() => handleLinkClick('/report')}
               >
                 Report
               </Link>
@@ -91,7 +83,6 @@ const Navbar = () => {
             <Link 
               href='/master-item'
               className={getLinkClass('/master-item')}
-              onClick={() => handleLinkClick('/master-item')}
             >
               Master Item
             </Link>
@@ -100,7 +91,6 @@ const Navbar = () => {
             <Link 
               href='/scanned-item'
               className={getLinkClass('/scanned-item')}
-              onClick={() => handleLinkClick('/scanned-item')}
             >
               Scan SN
             </Link>
@@ -109,7 +99,6 @@ const Navbar = () => {
             <Link 
               href='/report'
               className={getLinkClass('/report')}
-              onClick={() => handleLinkClick('/report')}
             >
               Report
             </Link>
