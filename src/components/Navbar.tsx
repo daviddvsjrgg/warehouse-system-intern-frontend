@@ -1,28 +1,25 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logoutUser } from '@/api/auth/auth';
 import Link from 'next/link';
 
 const Navbar = () => {
   const router = useRouter();
-  const [activeLink, setActiveLink] = useState('');
+  const [activeLink, setActiveLink] = useState('');  // State to track the active link
 
-  // Retrieve the 'onUrl' value from localStorage
-  useEffect(() => {
-    const storedUrl = localStorage.getItem('onUrl');
-    if (storedUrl) {
-      setActiveLink(storedUrl);
-    }
-  }, []);
-  
-  // Helper function to apply the red background if the link matches the current active link
+  // Helper function to apply the gray background if the link matches the current active link
   const getLinkClass = (href: string) => {
     return href === activeLink ? 'bg-gray-300' : '';
   };
-  
+
+  // Function to handle the link click and set the active link
+  const handleLinkClick = (href: string) => {
+    setActiveLink(href);
+  };
+
   // Function to handle logout
   const handleLogout = async () => {
     try {
@@ -32,7 +29,6 @@ const Navbar = () => {
       console.error('Logout error:', error);
     }
   };
-
 
   return (
     <div className="navbar bg-gray-100 dark:bg-base-100">
@@ -59,13 +55,31 @@ const Navbar = () => {
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
           >
             <li>
-              <Link href='/master-item' className={getLinkClass('/master-item')}>Master Item</Link>
+              <Link 
+                href='/master-item'
+                className={getLinkClass('/master-item')}
+                onClick={() => handleLinkClick('/master-item')}
+              >
+                Master Item
+              </Link>
             </li>
             <li>
-              <Link href='/scanned-item' className={getLinkClass('/scanned-item')}>Scan SN</Link>
+              <Link 
+                href='/scanned-item'
+                className={getLinkClass('/scanned-item')}
+                onClick={() => handleLinkClick('/scanned-item')}
+              >
+                Scan SN
+              </Link>
             </li>
             <li>
-              <Link href='/report' className={getLinkClass('/report')}>Report</Link>
+              <Link 
+                href='/report'
+                className={getLinkClass('/report')}
+                onClick={() => handleLinkClick('/report')}
+              >
+                Report
+              </Link>
             </li>
           </ul>
         </div>
@@ -74,13 +88,31 @@ const Navbar = () => {
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
           <li>
-            <Link href='/master-item' className={getLinkClass('/master-item')}>Master Item</Link>
+            <Link 
+              href='/master-item'
+              className={getLinkClass('/master-item')}
+              onClick={() => handleLinkClick('/master-item')}
+            >
+              Master Item
+            </Link>
           </li>
           <li className='mx-2'>
-            <Link href='/scanned-item' className={getLinkClass('/scanned-item')}>Scan SN</Link>
+            <Link 
+              href='/scanned-item'
+              className={getLinkClass('/scanned-item')}
+              onClick={() => handleLinkClick('/scanned-item')}
+            >
+              Scan SN
+            </Link>
           </li>
           <li>
-            <Link href='/report' className={getLinkClass('/report')}>Report</Link>
+            <Link 
+              href='/report'
+              className={getLinkClass('/report')}
+              onClick={() => handleLinkClick('/report')}
+            >
+              Report
+            </Link>
           </li>
         </ul>
       </div>
