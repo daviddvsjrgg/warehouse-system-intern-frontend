@@ -10,7 +10,6 @@ import api from '@/services/axiosInstance'; // Import Axios Instance
 const AddScanned = () => {
   const [sku, setSku] = useState(''); // State for SKU
   const [invoiceNumber, setInvoiceNumber] = useState(''); // State for Invoice Number
-  const [barcodeSn, setBarcodeSn] = useState(''); // State for Barcode SN
   const [qty, setQty] = useState(1); // State for Quantity, default to 1
   const [items, setItems] = useState<any[]>([]); // State for the array of scanned items
   const [error, setError] = useState<string | null>(null); // State for error messages
@@ -61,7 +60,6 @@ const AddScanned = () => {
     try {
       if (debouncedSku) {
         const item = await fetchMasterItemBySku(debouncedSku); // Fetch the item by SKU
-        setBarcodeSn(item.barcode_sn); // Set the Barcode SN from the response
 
         // Check if the item is already in the array to avoid duplicates
         if (!items.some(existingItem => existingItem.id === item.id)) {
@@ -76,7 +74,6 @@ const AddScanned = () => {
         setQty(1); // Reset quantity to 1 when a new item is fetched
       } else {
         // Reset barcode and invoice if SKU is empty
-        setBarcodeSn('');
         setQty(1); // Reset quantity to 1 if SKU is empty
       }
     } catch (error) {
@@ -96,7 +93,6 @@ const AddScanned = () => {
       handleSearchBySku(debouncedSku); // Trigger the search when the debounced value changes
     } else {
       // Reset the barcode SN if the SKU is empty
-      setBarcodeSn('');
     }
   // eslint-disable-next-line no-console
   }, [debouncedSku]);
@@ -125,7 +121,6 @@ const AddScanned = () => {
   const handleClearAll = () => {
     setSku('');
     setInvoiceNumber('');
-    setBarcodeSn('');
     setQty(1);
     setItems([]); // Clear the scanned items
     setError(null); // Reset any error message
@@ -140,7 +135,23 @@ const AddScanned = () => {
   return (
     <>
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2">
+          {/* Invoice Number Input */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Invoice Number</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter Invoice Number"
+                className="input input-bordered w-full"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)} // Update Invoice Number state
+              />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-2">
           {/* SKU Input */}
           <div className="form-control">
             <label className="label">
@@ -152,24 +163,11 @@ const AddScanned = () => {
               className="input input-bordered w-full"
               value={sku}
               onChange={(e) => setSku(e.target.value)} // Update SKU state
-            />
-          </div>
-
-          {/* Invoice Number Input */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Invoice Number</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter Invoice Number"
-              className="input input-bordered w-full"
-              value={invoiceNumber}
-              onChange={(e) => setInvoiceNumber(e.target.value)} // Update Invoice Number state
-            />
+              />
           </div>
         </div>
 
+      <div className="grid grid-cols-2">
         {/* Barcode SN Input */}
         <div className="form-control">
           <label className="label">
@@ -179,10 +177,9 @@ const AddScanned = () => {
             type="text"
             placeholder="Enter Barcode SN"
             className="input input-bordered w-full"
-            value={barcodeSn}
-            readOnly // Making this field read-only as it should be auto-filled
           />
         </div>
+      </div>
 
         {/* Loading Indicator */}
         {loading && <div className="text-blue-500 mt-2">Loading...</div>}

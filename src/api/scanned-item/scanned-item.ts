@@ -51,20 +51,48 @@ export interface ApiResponse {
   };
 }
 
-// Function to fetch scanned items with optional pagination
-export const fetchScannedItems = async (page: number = 1): Promise<FetchScannedItem[]> => {
+/**
+ * Fetch scanned items with optional filters for pagination, exact search, and date range.
+ * @param page - The page number for pagination.
+ * @param perPage - The number of items per page.
+ * @param exactSearch - The exact SKU or invoice number to search for.
+ * @param startDate - The start date for filtering scanned items.
+ * @param endDate - The end date for filtering scanned items.
+ * @returns An array of scanned items.
+ */
+export const fetchScannedItems = async (
+  page: number = 1,
+  perPage: number = 5,
+  exactSearch: string = '',
+  startDate?: string,
+  endDate?: string
+): Promise<FetchScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token;
-  console.log(page)
 
   if (!token) {
     throw new Error('No token found');
   }
-  
+
   try {
-    // Send GET request to fetch scanned items with optional pagination
+    // Build the query string based on the provided parameters
+    const queryParams: string[] = [];
+    
+    queryParams.push(`per_page=${perPage}`); // Add pagination
+    queryParams.push(`page=${page}`); // Add page number
+
+    if (exactSearch) {
+      queryParams.push(`exact=${encodeURIComponent(exactSearch)}`); // SKU search
+    }
+    if (startDate) {
+      queryParams.push(`start_date=${encodeURIComponent(startDate)}`); // Start date filter
+    }
+    if (endDate) {
+      queryParams.push(`end_date=${encodeURIComponent(endDate)}`); // End date filter
+    }
+
     const response = await api.get<ApiResponse>(
-      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?per_page=100`, // Querying with page number
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.join('&')}`, // Querying with parameters
       {
         headers: {
           Authorization: `Bearer ${token}`, // Authorization header
@@ -72,10 +100,15 @@ export const fetchScannedItems = async (page: number = 1): Promise<FetchScannedI
       }
     );
 
+    // Check if response was successful
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch scanned items');
+    }
+
     // Return the scanned items data from the API response
     return response.data.data.data; // Accessing the data array inside the response
   } catch (error) {
-    const errorMessage = (error as Error).message || "Unkown Error";
+    const errorMessage = (error as Error).message || "Unknown Error";
     throw new Error(errorMessage);
   }
 };
