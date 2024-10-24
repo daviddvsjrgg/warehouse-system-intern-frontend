@@ -5,82 +5,87 @@ import { convertToJakartaTime } from '@/utils/dateUtils';
 import useDebounce from '@/hooks/useDebounce';
 
 const TableReport: React.FC = () => {
-  const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]); // State for scanned items
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
-  const [startDate, setStartDate] = useState<string>(''); // State for start date
-  const [endDate, setEndDate] = useState<string>(''); // State for end date
-  const [skuSearch, setSkuSearch] = useState<string>(''); // State for SKU search term
-  const debouncedSkuSearch = useDebounce(skuSearch, 500); // Debounced search term with 500ms delay
-  const perPage = 5; // Fixed number of items per page
-  const [currentPage, setCurrentPage] = useState<number>(1); // State for current page
+  const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [skuSearch, setSkuSearch] = useState<string>('');
+  const debouncedSkuSearch = useDebounce(skuSearch, 500);
+  const perPage = 5;
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false); // Track next button click
 
   const getScannedItems = useCallback(async () => {
-    setLoading(true); // Set loading to true before fetching
+    setLoading(true);
     try {
-      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate); // Fetch with debounced SKU search
-      setScannedItems(items); // Set the fetched items in state
+      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
+      setScannedItems(items);
+      setNextButtonClicked(false); // Reset next button state after fetching
     } catch (error) {
       const errorMessage = (error as Error).message || "Unknown Error";
-      setError(errorMessage || 'Failed to load data'); // Set error if any
+      setError(errorMessage || 'Failed to load data');
     } finally {
-      setLoading(false); // Set loading to false after fetching
+      setLoading(false);
     }
   }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate]);
 
   useEffect(() => {
-    getScannedItems(); // Fetch items whenever search/filter changes
+    getScannedItems();
   }, [getScannedItems]);
 
   if (error) {
-    return <div>Error: {error}</div>; // Show error message
+    return <div>Error: {error}</div>;
   }
 
   const handleEdit = (id: number) => {
-    // Implement edit logic here
     console.log(`Edit item with id: ${id}`);
   };
 
   const handleDelete = (id: number) => {
-    // Implement delete logic here
     console.log(`Delete item with id: ${id}`);
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => prev + 1);
+    setNextButtonClicked(true); // Set to true when next button is clicked
   };
 
   return (
     <div className="overflow-x-auto">
       {/* Filter Inputs */}
-      <div className="flex gap-4 mb-4">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="input input-bordered"
-          placeholder="Start Date"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="input input-bordered"
-          placeholder="End Date"
-        />
-        <input
-          type="text"
-          value={skuSearch}
-          onChange={(e) => setSkuSearch(e.target.value)}
-          className="input input-bordered"
-          placeholder="Search by SKU"
-        />
+      <div className='flex justify-between mt-2 mr-2'>
+        <div className="gap-4 mb-4 mt-2">
+          <div className='flex'>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="input input-bordered"
+              placeholder="Start Date"
+            />
+            <div className='mt-3 mx-3 text-sm'>To</div>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="input input-bordered"
+              placeholder="End Date"
+            />
+          </div>
+        </div>
+          <input
+            type="text"
+            value={skuSearch}
+            onChange={(e) => setSkuSearch(e.target.value)}
+            className="input input-bordered"
+            placeholder="Search by SKU"
+          />
       </div>
       <table className="table">
         {/* Table Head */}
         <thead>
           <tr>
-            <th>
-              <label>
-                <input type="checkbox" className="checkbox" />
-              </label>
-            </th>
             <th>Date</th>
             <th>SKU</th>
             <th>User</th>
@@ -94,18 +99,13 @@ const TableReport: React.FC = () => {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={9} className="text-center">
+              <td colSpan={8} className="text-center">
                 <span className="loading loading-dots loading-sm"></span>
               </td>
             </tr>
           ) : (
             scannedItems.map((item) => (
               <tr key={item.id}>
-                <th>
-                  <label>
-                    <input type="checkbox" className="checkbox" />
-                  </label>
-                </th>
                 <td>{convertToJakartaTime(item.created_at)}</td>
                 <td>{item.sku}</td>
                 <td>
@@ -143,22 +143,24 @@ const TableReport: React.FC = () => {
       </table>
 
       {/* Pagination Controls */}
-      <div className="flex justify-between mt-4">
-        <button 
-          className="btn" 
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} 
-          disabled={currentPage === 1}
-        >
-          Previous
-        </button>
-        <span>Page {currentPage}</span>
-        <button 
-          className="btn" 
-          onClick={() => setCurrentPage((prev) => prev + 1)} 
-          disabled={scannedItems.length < perPage}
-        >
-          Next
-        </button>
+      <div className='flex justify-between'>
+        <span className='mt-3'>Page {currentPage}</span>
+        <div className="mt-4">
+          <button 
+            className="btn" 
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} 
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <button 
+            className="btn mx-2" 
+            onClick={handleNextPage} 
+            disabled={scannedItems.length < perPage || nextButtonClicked}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

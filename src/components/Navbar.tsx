@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { logoutUser } from '@/api/auth/auth';
 import Link from 'next/link';
@@ -10,10 +10,11 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();  // Get current pathname
 
-  // Helper function to apply the gray background if the link matches the current pathname
-  const getLinkClass = (href: string) => {
-    return href === pathname ? 'bg-gray-300' : '';
-  };
+  // Memoize the link class generation to avoid recalculating on every render
+  const getLinkClass = useMemo(
+    () => (href: string) => href === pathname ? 'bg-gray-300' : '',
+    [pathname]
+  );
 
   // Function to handle logout
   const handleLogout = async () => {
@@ -29,7 +30,7 @@ const Navbar = () => {
     <div className="navbar bg-gray-100 dark:bg-base-100">
       <div className="navbar-start">
         <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
+          <div tabIndex={0} role="button" aria-label="Menu" className="btn btn-ghost lg:hidden">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -107,7 +108,7 @@ const Navbar = () => {
       </div>
       <div className="navbar-end">
         <div className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+          <div tabIndex={0} role="button" aria-label="User Menu" className="btn btn-ghost btn-circle avatar">
             <div className="w-10 rounded-full">
               <Image
                 className=""
