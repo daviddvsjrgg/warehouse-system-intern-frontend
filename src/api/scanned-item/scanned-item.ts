@@ -85,8 +85,7 @@ export const fetchScannedItems = async (
       queryParams.push(`exact=${encodeURIComponent(exactSearch)}`); // SKU search
     }
     if (startDate) {
-      const testo = queryParams.push(`start_date=${encodeURIComponent(startDate)}`); // Start date filter
-      console.log(testo); 
+      queryParams.push(`start_date=${encodeURIComponent(startDate)}`); // Start date filter
     }
     if (endDate) {
       queryParams.push(`end_date=${encodeURIComponent(endDate)}`); // End date filter
