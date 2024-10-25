@@ -16,17 +16,3 @@ export const convertToJakartaTime = (utcDate: string): string => {
   // Return formatted date and time in the YYYY-DD-MM and 24-hour format
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
-
-// Utility function to convert UTC date to Jakarta Time (GMT+7)
-export const convertIntoDateFilter = (utcDate: string): string => {
-  // Convert the UTC date string to a Date object
-  const date = new Date(utcDate);
-
-  // Extract year, day, and month, and format time using 24-hour format
-  const year = date.getFullYear();
-  const day = ('0' + date.getDate()).slice(-2);  // Ensure 2-digit day
-  const month = ('0' + (date.getMonth() + 1)).slice(-2);  // Ensure 2-digit month
-
-  // Return formatted date and time in the YYYY-DD-MM and 24-hour format
-  return `${month}/${day}/${year}`;
-};

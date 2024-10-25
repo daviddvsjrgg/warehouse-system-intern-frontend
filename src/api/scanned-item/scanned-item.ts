@@ -154,3 +154,46 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
     throw new Error(errorMessage);
   }
 };
+
+// Function to update an existing item (UPDATE)
+export const updateScannedItem = async (id: number, qty: number): Promise<ScannedItem> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const response = await api.put<ScannedItem>(
+    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/${id}`,
+    { qty, _method: 'PUT' }, // Method override for backward compatibility
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+// Function to delete an item (DELETE)
+export const deleteScannedItem = async (id: number): Promise<{ success: boolean; message: string }> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+  
+  const response = await api.delete<{ success: boolean; message: string }>(
+    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};

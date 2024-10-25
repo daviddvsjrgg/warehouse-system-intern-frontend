@@ -15,8 +15,8 @@ const AddScanned = () => {
   const [error, setError] = useState<string | null>(null); // State for error messages
   const [loading, setLoading] = useState(false); // State for loading status
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // State for success messages
+  const debouncedSku = useDebounce(sku, 300); // Debounce the SKU input with a 300ms delay
 
-  const debouncedSku = useDebounce(sku, 500); // Debounce the SKU input with a 500ms delay
 
   // Fetch the user ID from the token
   const fetchUserId = async () => {
