@@ -27,7 +27,7 @@ const AddMaster: React.FC = () => {
     setIsSubmitting(true); // Disable the button on form submission
 
     // Validation: Check if any field is empty
-    if (!sku || !nama_barang) {
+    if (!sku || !nama_barang || !barcode_sn) {
       setError('All fields are required!');
       setIsSubmitting(false); // Re-enable the button if validation fails
       return; // Stop the function if fields are empty
@@ -37,7 +37,7 @@ const AddMaster: React.FC = () => {
     const newItem = {
       sku,
       nama_barang,
-      barcode_sn: Math.random().toString(36).substring(2, 2 + 5), // Generate a random barcode
+      barcode_sn
     };
 
     try {
@@ -140,7 +140,7 @@ const AddMaster: React.FC = () => {
           />
         </div>
       </div>
-      <div className='hidden'>
+      <div className=''>
         <label className="block text-sm font-medium">Barcode SN:</label>
         <input
           type="text"
