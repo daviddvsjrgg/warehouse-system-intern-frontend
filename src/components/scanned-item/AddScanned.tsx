@@ -1,24 +1,23 @@
 /* eslint-disable */
 
 import React, { useState, useEffect } from 'react';
-import { fetchMasterItemBySku } from '@/api/master-item/master-item'; // Adjust this import based on your project structure
-import { parseCookies } from 'nookies'; // To get token from cookies
-import useDebounce from '@/hooks/useDebounce'; // Import the useDebounce hook
-import { addScannedItems } from '@/api/scanned-item/scanned-item'; // Import the addScannedItems function from your service
-import api from '@/services/axiosInstance'; // Import Axios Instance
+import { fetchMasterItemByBarcodeSN } from '@/api/master-item/master-item'; 
+import { parseCookies } from 'nookies'; 
+import useDebounce from '@/hooks/useDebounce'; 
+import { addScannedItems } from '@/api/scanned-item/scanned-item'; 
+import api from '@/services/axiosInstance'; 
 
 const AddScanned = () => {
-  const [sku, setSku] = useState(''); // State for SKU
-  const [invoiceNumber, setInvoiceNumber] = useState(''); // State for Invoice Number
-  const [qty, setQty] = useState(1); // State for Quantity, default to 1
-  const [items, setItems] = useState<any[]>([]); // State for the array of scanned items
-  const [error, setError] = useState<string | null>(null); // State for error messages
-  const [loading, setLoading] = useState(false); // State for loading status
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); // State for success messages
-  const debouncedSku = useDebounce(sku, 300); // Debounce the SKU input with a 300ms delay
+  const [sku, setSku] = useState(''); 
+  const [invoiceNumber, setInvoiceNumber] = useState(''); 
+  const [qty, setQty] = useState(1); 
+  const [barcodeSN, setBarcodeSN] = useState(''); 
+  const [items, setItems] = useState<any[]>([]); 
+  const [error, setError] = useState<string | null>(null); 
+  const [loading, setLoading] = useState(false); 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); 
+  const debouncedBarcodeSN = useDebounce(barcodeSN, 500); 
 
-
-  // Fetch the user ID from the token
   const fetchUserId = async () => {
     const cookies = parseCookies();
     const token = cookies.token;
@@ -35,46 +34,48 @@ const AddScanned = () => {
         },
       });
     } catch (error) {
-      const errorMessage = (error as Error).message || "Unknwon error";
+      const errorMessage = (error as Error).message || "Unknown error";
       setError('Failed to fetch user information.' + errorMessage);
     }
   };
 
-  // Fetch user ID when the component mounts
   useEffect(() => {
     fetchUserId();
   }, []);
 
-  // Function to fetch the item by SKU
-  const handleSearchBySku = async (debouncedSku: string) => {
-    setError(null); // Reset error state
-    setLoading(true); // Set loading to true
+  const handleSearchByBarcodeSN = async (debouncedBarcodeSN: string) => {
+    setError(null); 
+    setLoading(true); 
 
-    // Validate that invoice number is not empty
     if (!invoiceNumber) {
-      setError('Invoice Number is required to search by SKU.');
-      setLoading(false); // Set loading to false when done
-      return; // Exit the function early if the invoice number is empty
+      setError('Invoice Number is required.');
+      setLoading(false); 
+      return; 
+    }
+
+    if (!sku) {
+      setError('SKU is required.');
+      setLoading(false); 
+      return; 
     }
 
     try {
-      if (debouncedSku) {
-        const item = await fetchMasterItemBySku(debouncedSku); // Fetch the item by SKU
+      if (debouncedBarcodeSN) {
+        const item = await fetchMasterItemByBarcodeSN(debouncedBarcodeSN);
 
         // Check if the item is already in the array to avoid duplicates
         if (!items.some(existingItem => existingItem.id === item.id)) {
           setItems(prevItems => [
             ...prevItems,
-            { ...item, invoiceNumber, qty } // Append new item with fixed invoice number
+            { ...item, invoiceNumber, qty, sku } // Include SKU from state
           ]);
         } else {
-          setError(`Item with SKU "${sku}" already added.`);
+          setError(`Item with "${barcodeSN}" already added.`);
         }
 
-        setQty(1); // Reset quantity to 1 when a new item is fetched
+        setQty(1); 
       } else {
-        // Reset barcode and invoice if SKU is empty
-        setQty(1); // Reset quantity to 1 if SKU is empty
+        setQty(1); 
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -83,76 +84,68 @@ const AddScanned = () => {
         setError('Unexpected error occurred while importing data.');
       }
     } finally {
-      setLoading(false); // Set loading to false when done
+      setLoading(false); 
     }
   };
 
-  // Use effect to automatically trigger the search when debouncedSku changes
   useEffect(() => {
-    if (debouncedSku) {
-      handleSearchBySku(debouncedSku); // Trigger the search when the debounced value changes
-    } else {
-      // Reset the barcode SN if the SKU is empty
+    if (debouncedBarcodeSN) {
+      handleSearchByBarcodeSN(debouncedBarcodeSN); 
     }
-  // eslint-disable-next-line no-console
-  }, [debouncedSku]);
+  }, [debouncedBarcodeSN]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); // Set loading to true when submitting
+    setLoading(true); 
 
     try {
-      await addScannedItems(items); // Ensure items are structured correctly
-      handleClearAll()
-      setSuccessMessage('Items submitted successfully!'); // Set success message
+      await addScannedItems(items);
+      handleClearAll();
+      setSuccessMessage('Items submitted successfully!'); 
       setTimeout(() => {
-          setSuccessMessage(''); // Clear success message after 6 seconds
+          setSuccessMessage(''); 
       }, 6000);
-      setError(null); // Clear any existing error messages
+      setError(null); 
     } catch (error) {
       console.error('Error during submission:', error);
-      setError('Error during submission, please try again.'); // Set error message
+      setError('Error during submission, please try again.'); 
     } finally {
-      setLoading(false); // Set loading to false when done
+      setLoading(false); 
     }
   };
 
-  // Function to clear all items and reset fields
   const handleClearAll = () => {
     setSku('');
     setInvoiceNumber('');
     setQty(1);
-    setItems([]); // Clear the scanned items
-    setError(null); // Reset any error message
-    setSuccessMessage(null); // Clear success message
+    setItems([]); 
+    setError(null); 
+    setSuccessMessage(null); 
   };
 
-  // Function to undo the last added item
   const handleUndo = () => {
-    setItems(prevItems => prevItems.slice(0, -1)); // Remove the last item from the scanned items
+    setItems(prevItems => prevItems.slice(0, -1)); 
   };
 
   return (
     <>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-2">
-          {/* Invoice Number Input */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Invoice Number</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Enter Invoice Number"
-                className="input input-bordered w-full"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)} // Update Invoice Number state
-              />
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Invoice Number</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter Invoice Number"
+              className="input input-bordered w-full"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)} 
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2">
-          {/* SKU Input */}
           <div className="form-control">
             <label className="label">
               <span className="label-text">SKU</span>
@@ -162,40 +155,35 @@ const AddScanned = () => {
               placeholder="Enter SKU"
               className="input input-bordered w-full"
               value={sku}
-              onChange={(e) => setSku(e.target.value)} // Update SKU state
-              />
+              onChange={(e) => setSku(e.target.value)} 
+            />
           </div>
         </div>
 
-      <div className="grid grid-cols-2">
-        {/* Barcode SN Input */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Barcode SN</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Enter Barcode SN"
-            className="input input-bordered w-full"
-          />
+        <div className="grid grid-cols-2">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Barcode SN</span>
+            </label>
+            <input
+              type="text"
+              value={barcodeSN}
+              onChange={(e) => setBarcodeSN(e.target.value)} 
+              placeholder="Enter Barcode SN"
+              className="input input-bordered w-full"
+            />
+          </div>
         </div>
-      </div>
 
-        {/* Loading Indicator */}
         {loading && <div className="text-blue-500 mt-2">Loading...</div>}
-
-        {/* Error Message */}
         {error && <div className="text-red-500 mt-2">{error}</div>}
-
-        {/* Success Message */}
         {successMessage && <div className="text-green-500 mt-2">{successMessage}</div>}
 
-        {/* Submit Button */}
         <div className="mt-6">
           <button 
             type="submit" 
             className="btn btn-primary btn-sm" 
-            disabled={items.length === 0 || loading} // Disable button if no items or loading
+            disabled={items.length === 0 || loading} 
           >
             {loading ? 'Submitting...' : 'Submit'}
           </button>
@@ -203,7 +191,7 @@ const AddScanned = () => {
             type="button" 
             className="btn btn-warning ml-3 btn-sm" 
             onClick={handleUndo}
-            disabled={items.length === 0} // Disable button if no items to undo
+            disabled={items.length === 0} 
           >
             Undo
           </button>
@@ -217,7 +205,6 @@ const AddScanned = () => {
         </div>
       </form>
 
-      {/* Displaying the fetched items in a table */}
       {items.length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold">Scanned Items</h3>
@@ -236,7 +223,7 @@ const AddScanned = () => {
               <tbody>
                 {items.map(item => (
                   <tr key={item.id}>
-                    <td>{item.sku}</td>
+                    <td>{item.sku}</td> {/* Now displaying SKU from state */}
                     <td>{item.id}</td>
                     <td>{item.barcode_sn}</td>
                     <td>{item.nama_barang}</td>
