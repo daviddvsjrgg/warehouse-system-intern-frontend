@@ -142,7 +142,7 @@ export const deleteMasterItem = async (id: number): Promise<{ success: boolean; 
   return response.data;
 };
 
-export const fetchMasterItemByBarcodeSN = async (barcode_sn: string): Promise<ItemDetails> => {
+export const fetchMasterItemBySKU = async (sku: string): Promise<ItemDetails> => {
   const cookies = parseCookies();
   const token = cookies.token;
 
@@ -151,7 +151,7 @@ export const fetchMasterItemByBarcodeSN = async (barcode_sn: string): Promise<It
   }
 
   const response = await api.get<ApiResponse>(
-    `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}?query=${barcode_sn}&exact=true`,
+    `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}?query=${sku}&exact=true`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -162,7 +162,7 @@ export const fetchMasterItemByBarcodeSN = async (barcode_sn: string): Promise<It
   const { status_code, success, message, data } = response.data;
 
   if (!success || status_code !== 200 || !data || data.length === 0) {
-    throw new Error(`Item with SN "${barcode_sn}" not found: ${message}`);
+    throw new Error(`Item with SKU "${sku}" not found: ${message}`);
   }
 
   return data[0]; // Return the first (and ideally only) item

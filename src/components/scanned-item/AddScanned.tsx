@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 import React, { useState, useEffect } from 'react';
-import { fetchMasterItemByBarcodeSN } from '@/api/master-item/master-item'; 
+import { fetchMasterItemBySKU } from '@/api/master-item/master-item'; 
 import { parseCookies } from 'nookies'; 
 import useDebounce from '@/hooks/useDebounce'; 
 import { addScannedItems } from '@/api/scanned-item/scanned-item'; 
@@ -16,83 +16,43 @@ const AddScanned = () => {
   const [error, setError] = useState<string | null>(null); 
   const [loading, setLoading] = useState(false); 
   const [successMessage, setSuccessMessage] = useState<string | null>(null); 
-  const debouncedBarcodeSN = useDebounce(barcodeSN, 500); 
+  const debouncedSKU = useDebounce(sku, 500); 
+  const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
 
-  const fetchUserId = async () => {
-    const cookies = parseCookies();
-    const token = cookies.token;
-
-    if (!token) {
-      setError('No token found');
-      return;
-    }
-
-    try {
-      await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (error) {
-      const errorMessage = (error as Error).message || "Unknown error";
-      setError('Failed to fetch user information.' + errorMessage);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserId();
-  }, []);
-
-  const handleSearchByBarcodeSN = async (debouncedBarcodeSN: string) => {
+  const handleSearchBySKU = async (debouncedSKU: string) => {
     setError(null); 
-    setLoading(true); 
+    setLoading(true);   
 
-    if (!invoiceNumber) {
-      setError('Invoice Number is required.');
-      setLoading(false); 
-      return; 
-    }
-
-    if (!sku) {
-      setError('SKU is required.');
+    if (!invoiceNumber || !debouncedSKU) {
+      setError('Invoice Number and SKU are required.');
       setLoading(false); 
       return; 
     }
 
     try {
-      if (debouncedBarcodeSN) {
-        const item = await fetchMasterItemByBarcodeSN(debouncedBarcodeSN);
+      const item = await fetchMasterItemBySKU(debouncedSKU);
 
-        // Check if the item is already in the array to avoid duplicates
-        if (!items.some(existingItem => existingItem.id === item.id)) {
-          setItems(prevItems => [
-            ...prevItems,
-            { ...item, invoiceNumber, qty, sku } // Include SKU from state
-          ]);
-        } else {
-          setError(`Item with "${barcodeSN}" already added.`);
-        }
+      // Always add a new item, regardless of SKU or Barcode match
+      setItems(prevItems => [
+        ...prevItems,
+        { ...item, invoiceNumber, qty, sku, barcode_sn: barcodeSN }
+      ]);
 
-        setQty(1); 
-      } else {
-        setQty(1); 
-      }
+      // Reset fields after adding
+      setBarcodeSN('');
+      setQty(1);
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Unexpected error occurred while importing data.');
-      }
+      setError(error instanceof Error ? error.message : 'Unexpected error occurred while importing data.');
     } finally {
       setLoading(false); 
     }
   };
 
   useEffect(() => {
-    if (debouncedBarcodeSN) {
-      handleSearchByBarcodeSN(debouncedBarcodeSN); 
+    if (debouncedBarcodeSN && debouncedSKU && invoiceNumber) {
+      handleSearchBySKU(debouncedSKU); 
     }
-  }, [debouncedBarcodeSN]);
+  }, [debouncedBarcodeSN, debouncedSKU, invoiceNumber]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +78,7 @@ const AddScanned = () => {
     setSku('');
     setInvoiceNumber('');
     setQty(1);
+    setBarcodeSN('');
     setItems([]); 
     setError(null); 
     setSuccessMessage(null); 
@@ -213,7 +174,6 @@ const AddScanned = () => {
               <thead>
                 <tr className="bg-gray-200">
                   <th>SKU</th>
-                  <th>Item ID</th>
                   <th>Barcode SN</th>
                   <th>Nama Barang</th>
                   <th>Invoice Number</th>
@@ -223,29 +183,31 @@ const AddScanned = () => {
               <tbody>
                 {items.map(item => (
                   <tr key={item.id}>
-                    <td>{item.sku}</td> {/* Now displaying SKU from state */}
-                    <td>{item.id}</td>
+                    <td>{item.sku}</td>
                     <td>{item.barcode_sn}</td>
                     <td>{item.nama_barang}</td>
                     <td>{item.invoiceNumber}</td>
-                    <td>
+                    <td>1</td>
+                    {/* <td>
                       <input
                         type="number"
                         min="1"
                         value={item.qty}
                         onChange={(e) => {
                           const newQty = parseInt(e.target.value);
-                          setItems(prevItems =>
-                            prevItems.map(it =>
-                              it.id === item.id ? { ...it, qty: newQty } : it
-                            )
-                          );
+                          if (newQty > 0) {
+                            setItems(prevItems =>
+                              prevItems.map(it =>
+                                it.id === item.id ? { ...it, qty: newQty } : it
+                              )
+                            );
+                          }
                         }}
                         className="input input-bordered w-16"
                       />
-                    </td>
+                    </td> */}
                   </tr>
-                ))}
+                ))} 
               </tbody>
             </table>
           </div>

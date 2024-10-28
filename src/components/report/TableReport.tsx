@@ -294,7 +294,7 @@ const TableReport: React.FC = () => {
                   <td>{item.invoice_number}</td>
                   <td>{item.master_item.nama_barang}</td>
                   <td>{item.qty}</td>
-                  <td>{item.master_item.barcode_sn}</td>
+                  <td>{item.barcode_sn}</td>
                   <th>
                     <label htmlFor="edit_report" className="btn btn-ghost btn-xs text-blue-500" onClick={() => handleEdit(item.id, item.sku, item.qty)}>
                       Edit

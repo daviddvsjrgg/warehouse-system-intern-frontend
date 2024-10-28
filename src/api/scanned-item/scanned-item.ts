@@ -3,11 +3,12 @@ import { getUserIdFromToken } from '@/api/auth/auth';
 import { parseCookies } from 'nookies';
 
 interface ScannedItem {
-  item_id: number; // Assuming item_id is a number
+  item_id: number;
   sku: string;
   invoice_number: string;
   qty: number;
-  user_id: number; // Assuming user_id is also a number
+  user_id: number; 
+  barcode_sn: string;
 }
 
 // interfaces/scannedItem.ts
@@ -17,6 +18,7 @@ export interface FetchScannedItem {
   sku: string;
   invoice_number: string;
   qty: number;
+  barcode_sn: string;
   user_id: number;
   created_at: string;
   updated_at: string;
@@ -114,7 +116,7 @@ export const fetchScannedItems = async (
 };
 
 // Function to submit scanned items
-export const addScannedItems = async (items: { id: number; sku: string; invoiceNumber: string; qty: number }[]): Promise<ScannedItem[]> => {
+export const addScannedItems = async (items: { id: number; sku: string; invoiceNumber: string; qty: number; barcode_sn: string; }[]): Promise<ScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token; // Get token from cookies
 
@@ -132,7 +134,8 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
       sku: item.sku,                  // Use item.sku
       invoice_number: item.invoiceNumber, // Use item.invoiceNumber
       qty: item.qty,                  // Use item.qty
-      user_id: userId,                // Use the fetched userId
+      user_id: userId,   
+      barcode_sn: item.barcode_sn             // Use the fetched userId
     })),
   };
 
