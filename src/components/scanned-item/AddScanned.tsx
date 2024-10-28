@@ -19,6 +19,31 @@ const AddScanned = () => {
   const debouncedSKU = useDebounce(sku, 500); 
   const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
 
+  const fetchUserId = async () => {
+    const cookies = parseCookies();
+    const token = cookies.token;
+
+    if (!token) {
+      setError('No token found');
+      return;
+    }
+
+    try {
+      await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      const errorMessage = (error as Error).message || "Unknown error";
+      setError('Failed to fetch user information.' + errorMessage);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserId();
+  }, []);
+
   const handleSearchBySKU = async (debouncedSKU: string) => {
     setError(null); 
     setLoading(true);   
@@ -32,7 +57,16 @@ const AddScanned = () => {
     try {
       const item = await fetchMasterItemBySKU(debouncedSKU);
 
-      // Always add a new item, regardless of SKU or Barcode match
+      // Check if the barcode already exists in items
+      const barcodeExists = items.some(existingItem => existingItem.barcode_sn === barcodeSN);
+      
+      if (barcodeExists) {
+        setError(`Barcode "${barcodeSN}" already exists. Please use a unique barcode.`);
+        setLoading(false);
+        return;
+      }
+
+      // Always add a new item since SKU or Barcode can be the same
       setItems(prevItems => [
         ...prevItems,
         { ...item, invoiceNumber, qty, sku, barcode_sn: barcodeSN }
@@ -174,6 +208,7 @@ const AddScanned = () => {
               <thead>
                 <tr className="bg-gray-200">
                   <th>SKU</th>
+                  <th>Item ID</th>
                   <th>Barcode SN</th>
                   <th>Nama Barang</th>
                   <th>Invoice Number</th>
@@ -184,11 +219,11 @@ const AddScanned = () => {
                 {items.map(item => (
                   <tr key={item.id}>
                     <td>{item.sku}</td>
+                    <td>{item.id}</td>
                     <td>{item.barcode_sn}</td>
                     <td>{item.nama_barang}</td>
                     <td>{item.invoiceNumber}</td>
-                    <td>1</td>
-                    {/* <td>
+                    <td>
                       <input
                         type="number"
                         min="1"
@@ -205,7 +240,7 @@ const AddScanned = () => {
                         }}
                         className="input input-bordered w-16"
                       />
-                    </td> */}
+                    </td>
                   </tr>
                 ))} 
               </tbody>
