@@ -208,7 +208,6 @@ const AddScanned = () => {
               <thead>
                 <tr className="bg-gray-200">
                   <th>SKU</th>
-                  <th>Item ID</th>
                   <th>Barcode SN</th>
                   <th>Nama Barang</th>
                   <th>Invoice Number</th>
@@ -219,11 +218,11 @@ const AddScanned = () => {
                 {items.map(item => (
                   <tr key={item.id}>
                     <td>{item.sku}</td>
-                    <td>{item.id}</td>
                     <td>{item.barcode_sn}</td>
                     <td>{item.nama_barang}</td>
                     <td>{item.invoiceNumber}</td>
-                    <td>
+                    <td>1</td>
+                    {/* <td>
                       <input
                         type="number"
                         min="1"
@@ -240,7 +239,7 @@ const AddScanned = () => {
                         }}
                         className="input input-bordered w-16"
                       />
-                    </td>
+                    </td> */}
                   </tr>
                 ))} 
               </tbody>
