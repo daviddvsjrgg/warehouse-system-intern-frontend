@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchMasterItemBySKU } from '@/api/master-item/master-item'; 
 import useDebounce from '@/hooks/useDebounce'; 
 import { addScannedItems } from '@/api/scanned-item/scanned-item'; 
+
 interface ItemType {
   id: string;
   sku: string;
@@ -100,11 +101,15 @@ const AddScanned = () => {
     setItems(prevItems => prevItems.slice(0, -1)); 
   };
 
+  // Group items by invoiceNumber and then by sku | nama_barang
   const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.sku]) {
-      acc[item.sku] = [];
+    if (!acc[item.invoiceNumber]) {
+      acc[item.invoiceNumber] = {};
     }
-    acc[item.sku].push(item);
+    if (!acc[item.invoiceNumber][item.sku]) {
+      acc[item.invoiceNumber][item.sku] = [];
+    }
+    acc[item.invoiceNumber][item.sku].push(item);
     return acc;
   }, {});
 
@@ -186,41 +191,49 @@ const AddScanned = () => {
         </div>
       </form>
 
-      {items.length > 0 && (
+      {Object.keys(groupedItems).length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold">Scanned Items</h3>
           <div className="accordion-container">
-            {Object.keys(groupedItems).map((sku, index) => {
-              const firstItem = groupedItems[sku][0]; // Get the first item for display
-              return (
-                <div key={sku} className="collapse collapse-arrow bg-base-200 my-2">
-                  <input type="radio" name="accordion-group" defaultChecked={index === 0} />
-                  <div className="collapse-title text-xl font-medium">
-                    {firstItem.sku} | {firstItem.nama_barang}
-                  </div>
-                  <div className="collapse-content">
-                    <table className="table table-bordered w-full mt-2">
-                      <thead>
-                        <tr className="bg-gray-200">
-                          <th>Barcode SN</th>
-                          <th>Invoice Number</th>
-                          <th>Quantity</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedItems[sku].map((item: ItemType) => (
-                          <tr key={item.id}>
-                            <td>{item.barcode_sn}</td>
-                            <td>{item.invoiceNumber}</td>
-                            <td>{item.qty}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+            {Object.keys(groupedItems).map((invoice) => (
+              <div key={invoice} className="collapse collapse-plus bg-base-200 my-2">
+                <input type="checkbox" className="peer" />
+                <div className="collapse-title text-lg font-medium bg-base-200 peer-checked:bg-base-300">
+                  Invoice Number: {invoice}
                 </div>
-              );
-            })}
+                <div className="collapse-content bg-base-100 peer-checked:bg-base-300">
+                  {Object.keys(groupedItems[invoice]).map((sku) => {
+                    const firstItem = groupedItems[invoice][sku][0];
+                    return (
+                      <div key={sku} className="collapse collapse-arrow bg-base-200 my-2">
+                        <input type="checkbox" className="peer" />
+                        <div className="collapse-title text-md font-medium">
+                          {firstItem.sku} | {firstItem.nama_barang}
+                        </div>
+                        <div className="collapse-content">
+                          <table className="table table-bordered w-full mt-2">
+                            <thead>
+                              <tr className="bg-gray-200">
+                                <th>Barcode SN</th>
+                                <th>Quantity</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupedItems[invoice][sku].map((item: ItemType) => (
+                                <tr key={item.id}>
+                                  <td>{item.barcode_sn}</td>
+                                  <td>{item.qty}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
