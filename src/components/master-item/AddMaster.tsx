@@ -13,7 +13,6 @@ interface ExcelItem {
 const AddMaster: React.FC = () => {
   const [sku, setSku] = useState<string>('');
   const [nama_barang, setNamaBarang] = useState<string>('');
-  const [barcode_sn, setBarcodeSn] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // State to manage button disabled status
@@ -27,7 +26,7 @@ const AddMaster: React.FC = () => {
     setIsSubmitting(true); // Disable the button on form submission
 
     // Validation: Check if any field is empty
-    if (!sku || !nama_barang || !barcode_sn) {
+    if (!sku || !nama_barang) {
       setError('All fields are required!');
       setIsSubmitting(false); // Re-enable the button if validation fails
       return; // Stop the function if fields are empty
@@ -37,7 +36,7 @@ const AddMaster: React.FC = () => {
     const newItem = {
       sku,
       nama_barang,
-      barcode_sn
+      barcode_sn : Math.random().toString(36).substring(2, 7)
     };
 
     try {
@@ -56,7 +55,6 @@ const AddMaster: React.FC = () => {
       // Reset input fields after successful submission
       setSku('');
       setNamaBarang('');
-      setBarcodeSn('');
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -139,15 +137,6 @@ const AddMaster: React.FC = () => {
             className="input input-bordered w-full"
           />
         </div>
-      </div>
-      <div className=''>
-        <label className="block text-sm font-medium">Barcode SN:</label>
-        <input
-          type="text"
-          value={barcode_sn}
-          onChange={(e) => setBarcodeSn(e.target.value)}
-          className="input input-bordered w-full"
-        />
       </div>
       <button 
         type="submit" 
