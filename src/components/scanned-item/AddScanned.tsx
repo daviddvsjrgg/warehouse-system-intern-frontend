@@ -2,10 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { fetchMasterItemBySKU } from '@/api/master-item/master-item'; 
-import { parseCookies } from 'nookies'; 
 import useDebounce from '@/hooks/useDebounce'; 
 import { addScannedItems } from '@/api/scanned-item/scanned-item'; 
-import api from '@/services/axiosInstance'; 
+interface ItemType {
+  id: string;
+  sku: string;
+  barcode_sn: string;
+  nama_barang: string;
+  invoiceNumber: string;
+  qty: number;
+}
 
 const AddScanned = () => {
   const [sku, setSku] = useState(''); 
@@ -18,31 +24,6 @@ const AddScanned = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null); 
   const debouncedSKU = useDebounce(sku, 500); 
   const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
-
-  const fetchUserId = async () => {
-    const cookies = parseCookies();
-    const token = cookies.token;
-
-    if (!token) {
-      setError('No token found');
-      return;
-    }
-
-    try {
-      await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (error) {
-      const errorMessage = (error as Error).message || "Unknown error";
-      setError('Failed to fetch user information.' + errorMessage);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserId();
-  }, []);
 
   const handleSearchBySKU = async (debouncedSKU: string) => {
     setError(null); 
@@ -57,7 +38,6 @@ const AddScanned = () => {
     try {
       const item = await fetchMasterItemBySKU(debouncedSKU);
 
-      // Check if the barcode already exists in items
       const barcodeExists = items.some(existingItem => existingItem.barcode_sn === barcodeSN);
       
       if (barcodeExists) {
@@ -66,13 +46,11 @@ const AddScanned = () => {
         return;
       }
 
-      // Always add a new item since SKU or Barcode can be the same
       setItems(prevItems => [
         ...prevItems,
-        { ...item, invoiceNumber, qty, sku, barcode_sn: barcodeSN }
+        { ...item, invoiceNumber, qty, barcode_sn: barcodeSN }
       ]);
 
-      // Reset fields after adding
       setBarcodeSN('');
       setQty(1);
     } catch (error) {
@@ -121,6 +99,14 @@ const AddScanned = () => {
   const handleUndo = () => {
     setItems(prevItems => prevItems.slice(0, -1)); 
   };
+
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.sku]) {
+      acc[item.sku] = [];
+    }
+    acc[item.sku].push(item);
+    return acc;
+  }, {});
 
   return (
     <>
@@ -203,47 +189,38 @@ const AddScanned = () => {
       {items.length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold">Scanned Items</h3>
-          <div className="overflow-x-auto">
-            <table className="table table-bordered w-full mt-2">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th>SKU</th>
-                  <th>Barcode SN</th>
-                  <th>Nama Barang</th>
-                  <th>Invoice Number</th>
-                  <th>Quantity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.sku}</td>
-                    <td>{item.barcode_sn}</td>
-                    <td>{item.nama_barang}</td>
-                    <td>{item.invoiceNumber}</td>
-                    <td>1</td>
-                    {/* <td>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.qty}
-                        onChange={(e) => {
-                          const newQty = parseInt(e.target.value);
-                          if (newQty > 0) {
-                            setItems(prevItems =>
-                              prevItems.map(it =>
-                                it.id === item.id ? { ...it, qty: newQty } : it
-                              )
-                            );
-                          }
-                        }}
-                        className="input input-bordered w-16"
-                      />
-                    </td> */}
-                  </tr>
-                ))} 
-              </tbody>
-            </table>
+          <div className="accordion-container">
+            {Object.keys(groupedItems).map((sku, index) => {
+              const firstItem = groupedItems[sku][0]; // Get the first item for display
+              return (
+                <div key={sku} className="collapse collapse-arrow bg-base-200 my-2">
+                  <input type="radio" name="accordion-group" defaultChecked={index === 0} />
+                  <div className="collapse-title text-xl font-medium">
+                    {firstItem.sku} | {firstItem.nama_barang}
+                  </div>
+                  <div className="collapse-content">
+                    <table className="table table-bordered w-full mt-2">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          <th>Barcode SN</th>
+                          <th>Invoice Number</th>
+                          <th>Quantity</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupedItems[sku].map((item: ItemType) => (
+                          <tr key={item.id}>
+                            <td>{item.barcode_sn}</td>
+                            <td>{item.invoiceNumber}</td>
+                            <td>{item.qty}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
