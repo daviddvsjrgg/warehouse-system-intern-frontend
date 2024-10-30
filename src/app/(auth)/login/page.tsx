@@ -33,7 +33,7 @@ const Page = () => {
     try {
       // Call the login function to authenticate
       await loginUser({ email, password });
-      router.push("/"); // Redirect after successful login
+      router.push("/master-item"); // Redirect after successful login
     } catch (err) {
       const errorMessage = (err as Error).message || "Login failed";
       setError(errorMessage);
