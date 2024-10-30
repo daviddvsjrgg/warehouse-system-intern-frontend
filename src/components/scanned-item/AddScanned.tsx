@@ -1,9 +1,9 @@
 /* eslint-disable */
 
 import React, { useState, useEffect } from 'react';
-import { fetchMasterItemBySKU } from '@/api/master-item/master-item'; 
-import useDebounce from '@/hooks/useDebounce'; 
-import { addScannedItems } from '@/api/scanned-item/scanned-item'; 
+import { fetchMasterItemBySKU } from '@/api/master-item/master-item';
+import useDebounce from '@/hooks/useDebounce';
+import { addScannedItems } from '@/api/scanned-item/scanned-item';
 
 interface ItemType {
   id: string;
@@ -15,75 +15,69 @@ interface ItemType {
 }
 
 const AddScanned = () => {
-  const [sku, setSku] = useState(''); 
-  const [invoiceNumber, setInvoiceNumber] = useState(''); 
-  const [qty, setQty] = useState(1); 
-  const [barcodeSN, setBarcodeSN] = useState(''); 
-  const [items, setItems] = useState<any[]>([]); 
-  const [error, setError] = useState<string | null>(null); 
-  const [loading, setLoading] = useState(false); 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); 
-  const debouncedSKU = useDebounce(sku, 500); 
+  const [sku, setSku] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [qty, setQty] = useState(1);
+  const [barcodeSN, setBarcodeSN] = useState('');
+  const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const debouncedSKU = useDebounce(sku, 500);
   const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
 
   const handleSearchBySKU = async (debouncedSKU: string) => {
-    setError(null); 
-    setLoading(true);   
+    setError(null);
+    setLoading(true);
 
     if (!invoiceNumber || !debouncedSKU) {
       setError('Invoice Number and SKU are required.');
-      setLoading(false); 
-      return; 
+      setLoading(false);
+      return;
     }
 
     try {
       const item = await fetchMasterItemBySKU(debouncedSKU);
 
-      const barcodeExists = items.some(existingItem => existingItem.barcode_sn === barcodeSN);
-      
-      if (barcodeExists) {
-        setError(`Barcode "${barcodeSN}" already exists. Please use a unique barcode.`);
-        setLoading(false);
-        return;
-      }
-
-      setItems(prevItems => [
+      setItems((prevItems) => [
         ...prevItems,
-        { ...item, invoiceNumber, qty, barcode_sn: barcodeSN }
+        { ...item, invoiceNumber, qty, barcode_sn: barcodeSN },
       ]);
 
       setBarcodeSN('');
       setQty(1);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unexpected error occurred while importing data.');
+      setError(
+        error instanceof Error ? error.message : 'Unexpected error occurred while importing data.'
+      );
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (debouncedBarcodeSN && debouncedSKU && invoiceNumber) {
-      handleSearchBySKU(debouncedSKU); 
+      handleSearchBySKU(debouncedSKU);
     }
   }, [debouncedBarcodeSN, debouncedSKU, invoiceNumber]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); 
+    setLoading(true);
 
     try {
       await addScannedItems(items);
       handleClearAll();
-      setSuccessMessage('Items submitted successfully!'); 
+      setSuccessMessage('Items submitted successfully!');
       setTimeout(() => {
-          setSuccessMessage(''); 
+        setSuccessMessage('');
       }, 6000);
-      setError(null); 
+      setError(null);
     } catch (error) {
       console.error('Error during submission:', error);
-      setError('Error during submission, please try again.'); 
+      setError('Error during submission, please try again.');
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -92,14 +86,17 @@ const AddScanned = () => {
     setInvoiceNumber('');
     setQty(1);
     setBarcodeSN('');
-    setItems([]); 
-    setError(null); 
-    setSuccessMessage(null); 
+    setItems([]);
+    setError(null);
+    setSuccessMessage(null);
   };
 
   const handleUndo = () => {
-    setItems(prevItems => prevItems.slice(0, -1)); 
+    setItems((prevItems) => prevItems.slice(0, -1));
   };
+
+  // Calculate total quantity for all items
+  const totalQuantity = items.reduce((acc, item) => acc + item.qty, 0);
 
   // Group items by invoiceNumber and then by sku | nama_barang
   const groupedItems = items.reduce((acc, item) => {
@@ -111,7 +108,7 @@ const AddScanned = () => {
     }
     acc[item.invoiceNumber][item.sku].push(item);
     return acc;
-  }, {});
+  }, {} as Record<string, Record<string, ItemType[]>>);
 
   return (
     <>
@@ -126,7 +123,7 @@ const AddScanned = () => {
               placeholder="Enter Invoice Number"
               className="input input-bordered w-full"
               value={invoiceNumber}
-              onChange={(e) => setInvoiceNumber(e.target.value)} 
+              onChange={(e) => setInvoiceNumber(e.target.value)}
             />
           </div>
         </div>
@@ -134,14 +131,14 @@ const AddScanned = () => {
         <div className="grid grid-cols-2">
           <div className="form-control">
             <label className="label">
-              <span className="label-text">SKU</span>
+              <span className="label-text">SKU / Nama Barang</span>
             </label>
             <input
               type="text"
               placeholder="Enter SKU"
               className="input input-bordered w-full"
               value={sku}
-              onChange={(e) => setSku(e.target.value)} 
+              onChange={(e) => setSku(e.target.value)}
             />
           </div>
         </div>
@@ -154,7 +151,7 @@ const AddScanned = () => {
             <input
               type="text"
               value={barcodeSN}
-              onChange={(e) => setBarcodeSN(e.target.value)} 
+              onChange={(e) => setBarcodeSN(e.target.value)}
               placeholder="Enter Barcode SN"
               className="input input-bordered w-full"
             />
@@ -166,30 +163,33 @@ const AddScanned = () => {
         {successMessage && <div className="text-green-500 mt-2">{successMessage}</div>}
 
         <div className="mt-6">
-          <button 
-            type="submit" 
-            className="btn btn-primary btn-sm" 
-            disabled={items.length === 0 || loading} 
+          <button
+            type="submit"
+            className="btn btn-primary btn-sm"
+            disabled={items.length === 0 || loading}
           >
             {loading ? 'Submitting...' : 'Submit'}
           </button>
-          <button 
-            type="button" 
-            className="btn btn-warning ml-3 btn-sm" 
+          <button
+            type="button"
+            className="btn btn-warning ml-3 btn-sm"
             onClick={handleUndo}
-            disabled={items.length === 0} 
+            disabled={items.length === 0}
           >
             Undo
           </button>
-          <button 
-            type="button" 
-            className="btn btn-danger ml-3 btn-sm" 
-            onClick={handleClearAll}
-          >
+          <button type="button" className="btn btn-danger ml-3 btn-sm" onClick={handleClearAll}>
             Clear All
           </button>
         </div>
       </form>
+
+      {items.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold">Scanned Summary</h3>
+          <p>Total Quantity: {totalQuantity}</p>
+        </div>
+      )}
 
       {Object.keys(groupedItems).length > 0 && (
         <div className="mt-6">
@@ -203,12 +203,17 @@ const AddScanned = () => {
                 </div>
                 <div className="collapse-content bg-base-100 peer-checked:bg-base-300">
                   {Object.keys(groupedItems[invoice]).map((sku) => {
-                    const firstItem = groupedItems[invoice][sku][0];
+                    const skuItems = groupedItems[invoice][sku];
+                    const firstItem = skuItems[0];
+                    
+                    // Calculate total quantity for this SKU
+                    const totalSkuQuantity = skuItems.reduce((acc: number, item: ItemType) => acc + item.qty, 0);
+
                     return (
                       <div key={sku} className="collapse collapse-arrow bg-base-200 my-2">
                         <input type="checkbox" className="peer" />
                         <div className="collapse-title text-md font-medium">
-                          {firstItem.sku} | {firstItem.nama_barang}
+                          {firstItem.sku} | {firstItem.nama_barang} - Total Quantity: {totalSkuQuantity}
                         </div>
                         <div className="collapse-content">
                           <table className="table table-bordered w-full mt-2">
@@ -219,7 +224,7 @@ const AddScanned = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {groupedItems[invoice][sku].map((item: ItemType) => (
+                              {skuItems.map((item: ItemType) => (
                                 <tr key={item.id}>
                                   <td>{item.barcode_sn}</td>
                                   <td>{item.qty}</td>

@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState } from 'react';
 import { addMasterItems } from '@/api/master-item/master-item';
@@ -116,53 +116,62 @@ const AddMaster: React.FC = () => {
   
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {success && <p className="text-green-600">{success}</p>}
-      <div className="flex space-x-4"> {/* Use flexbox for two-column layout */}
-        <div className="flex-1">
-          <label className="block text-sm font-medium">SKU:</label>
-          <input
-            type="text"
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            className="input input-bordered w-full"
-          />
+    <>
+      <h3 className="text-lg font-bold">Tambah Barang</h3>
+      <div className='divider -mb-2'></div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {success && <p className="text-green-600">{success}</p>}
+        {error && <p className="text-red-600">{error}</p>}
+        <div className="flex space-x-4"> {/* Use flexbox for two-column layout */}
+          <div className="flex-1">
+            <label className="label">
+              <span className="label-text">SKU</span>
+            </label>
+            <input
+              type="text"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              className="input input-bordered w-full"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="label">
+              <span className="label-text">Nama Barang</span>
+            </label>
+            <input
+              type="text"
+              value={nama_barang}
+              onChange={(e) => setNamaBarang(e.target.value)}
+              className="input input-bordered w-full"
+            />
+          </div>
         </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium">Nama Barang:</label>
-          <input
-            type="text"
-            value={nama_barang}
-            onChange={(e) => setNamaBarang(e.target.value)}
-            className="input input-bordered w-full"
-          />
-        </div>
-      </div>
-      <button 
-        type="submit" 
-        className="btn btn-primary btn-sm" 
-        disabled={isSubmitting} // Disable the button when submitting
-      >
-        {isSubmitting ? "Submitting..." : "Submit"}
-      </button>
-      <p>Import dari Excel</p> 
-      <div className='flex justify-start'>
-        <input 
-          type="file" 
-          className="file-input file-input-bordered file-input-sm w-full max-w-xs" 
-          accept=".xlsx, .xls"
-          onChange={handleFileChange} // Handle file change
-        />
         <button 
-          className='btn btn-success btn-sm ml-2 text-white' 
-          onClick={handleImport} // Handle import
-          disabled={!file || isImporting} // Disable if no file is selected or if importing
+          type="submit" 
+          className="btn btn-primary btn-sm" 
+          disabled={isSubmitting} // Disable the button when submitting
         >
-          {isImporting ? "Importing..." : "Import"}
+          {isSubmitting ? "Submitting..." : "Submit"}
         </button>
-      </div>
-      {error && <p className="text-red-600">{error}</p>}
-    </form>
+        <div className='text-lg font-bold'>Import Barang dari Excel</div>
+        <div className='divider'></div>
+        <div className='flex justify-start'>
+          <input 
+            type="file" 
+            className="file-input file-input-bordered file-input-sm w-full max-w-xs" 
+            accept=".xlsx, .xls"
+            onChange={handleFileChange} // Handle file change
+          />
+          <button 
+            className='btn btn-success btn-sm ml-2 text-white' 
+            onClick={handleImport} // Handle import
+            disabled={!file || isImporting} // Disable if no file is selected or if importing
+          >
+            {isImporting ? "Importing..." : "Import"}
+          </button>
+        </div>
+      </form>
+    </>
   );
 };
 
