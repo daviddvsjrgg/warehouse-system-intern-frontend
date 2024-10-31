@@ -1,6 +1,6 @@
 import { parseCookies } from 'nookies';
 import api from '@/services/axiosInstance';
-
+import { Role } from '@/utils/interface/userRoleInterface';
 interface User {
   id: number;
   name: string;
@@ -8,6 +8,7 @@ interface User {
   email_verified_at: string;
   created_at: string;
   updated_at: string;
+  roles: Role[];
 }
 
 export const getUser = async (): Promise<User | null> => {
@@ -16,22 +17,12 @@ export const getUser = async (): Promise<User | null> => {
     const cookies = parseCookies(); // This retrieves all cookies as an object
     const token = cookies.token; // Access the token cookie directly
 
-    if (token) {
-      // Include the token in the Authorization header for the logout request
-      await api.post(
-        `${process.env.NEXT_PUBLIC_LOGOUT_API}`, 
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // Send the token as a bearer token
-          },
-        }
-      );
-    }
-
-    // Make the API call to get user data
-    const response = await api.get<User>(`${process.env.NEXT_PUBLIC_USER_API}`);
-    return response.data; // Return the user data
+    const response = await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // Send the token as a bearer token
+      },
+    });
+    return response.data; // Assume user data is returned in the response
 
   } catch (error) {
     console.error('Error fetching user:', error);

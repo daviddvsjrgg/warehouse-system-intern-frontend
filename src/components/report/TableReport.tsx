@@ -2,7 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem } from '@/api/scanned-item/scanned-item';
 import Image from 'next/image';
 import { convertToJakartaTime } from '@/utils/dateUtils';
+import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingInterface';
 import useDebounce from '@/hooks/useDebounce';
+import * as XLSX from 'xlsx';
 
 const TableReport: React.FC = () => {
   const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]);
@@ -112,6 +114,130 @@ const TableReport: React.FC = () => {
       setIsDeleting(false);
     }
   };
+
+  const handleExportPerItem = async () => {
+      try {
+          // Fetch scanned items
+          const items = await fetchScannedItems(1, 10000, '', startDate, endDate);
+
+          // Map fetched items to export data
+          const exportData = items.map(item => ({
+              Date: convertToJakartaTime(item.created_at),
+              'Invoice Number': item.invoice_number,
+              SKU: item.sku,
+              'Nama Barang': item.master_item.nama_barang,
+              Email: item.user.email,
+              'Barcode SN': item.barcode_sn,
+              Quantity: item.qty,
+          }));
+
+          // Convert to worksheet and download
+          const worksheet = XLSX.utils.json_to_sheet(exportData);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Scanned Per Items');
+          XLSX.writeFile(workbook, 'Scanned_Per_Items_Report.xlsx');
+      } catch (error) {
+          console.error('Error fetching or exporting items:', error);
+      }
+  };
+
+  const handleExportGrouping = async (): Promise<void> => {
+      try {
+          // Fetch scanned items
+          const items: Item[] = await fetchScannedItems(1, 10000, '', startDate, endDate);
+
+          // Group items by invoice number
+          const groupedData: Record<string, GroupedItem> = items.reduce((acc, item) => {
+              const invoice = item.invoice_number;
+
+              if (!acc[invoice]) {
+                  acc[invoice] = {
+                      Date: convertToJakartaTime(item.created_at),
+                      'Invoice Number': invoice,
+                      Items: [],
+                      Email: item.user.email,
+                  };
+              }
+              acc[invoice].Items.push({
+                  SKU: item.sku,
+                  'Nama Barang': item.master_item.nama_barang,
+                  'Barcode SN': item.barcode_sn,
+                  Quantity: item.qty,
+              });
+
+              return acc;
+          }, {} as Record<string, GroupedItem>);
+
+          // Convert grouped data to an array for export
+          const exportData: ExportData[] = Object.values(groupedData).map(group => {
+              const firstItem = group.Items[0]; // Get the first item to represent the grouping
+
+              // Create a string for Barcodes in the format "SN1: [barcode1], SN2: [barcode2], ..."
+              const barcodeList = group.Items.map((item) => `${item['Barcode SN']}`).join(', ');
+
+              return {
+                  Date: group.Date,
+                  'Invoice Number': group['Invoice Number'],
+                  Email: group.Email,
+                  SKU: firstItem.SKU, // Show SKU of the first item
+                  'Nama Barang': firstItem['Nama Barang'],
+                  'Barcode SN': barcodeList, // Combined barcodes
+                  Quantity: group.Items.reduce((total, item) => total + item.Quantity, 0), // Total Quantity
+              };
+          });
+
+          // Convert to worksheet and download
+          const worksheet = XLSX.utils.json_to_sheet(exportData, { skipHeader: true });
+          const workbook = XLSX.utils.book_new();
+
+          // Define column headers
+          const headers = [
+              { wch: 20 }, // Width for Date
+              { wch: 25 }, // Width for Invoice Number
+              { wch: 30 }, // Width for Email
+              { wch: 15 }, // Width for SKU
+              { wch: 25 }, // Width for Nama Barang
+              { wch: 40 }, // Width for Barcode SN (wider to accommodate all serial numbers)
+              { wch: 10 }  // Width for Quantity
+          ];
+
+          // Add headers to the worksheet
+          XLSX.utils.sheet_add_aoa(worksheet, [['Date', 'Invoice Number', 'Email', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity']], { origin: 'A1' });
+
+          // Adjust worksheet data starting from the second row to not overwrite headers
+          XLSX.utils.sheet_add_json(worksheet, exportData, { header: ['Date', 'Invoice Number', 'Email', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity'], skipHeader: true, origin: 'A2' });
+
+          // Merge cells for invoice number
+          const range = XLSX.utils.decode_range(worksheet['!ref'] || "A1:A1");
+
+          // Loop through the rows to merge the cells for the same invoice number
+          for (let row = 2; row <= range.e.r; row++) { // Start from row 2 to skip the header
+              if (
+                  worksheet[XLSX.utils.encode_cell({ r: row, c: 1 })]?.v === 
+                  worksheet[XLSX.utils.encode_cell({ r: row - 1, c: 1 })]?.v
+              ) {
+                  const mergeStart = row - 1; // Row to merge
+                  const mergeEnd = row; // Current row
+
+                  // If it’s the same invoice number, add to the merge list
+                  if (!worksheet['!merges']) worksheet['!merges'] = [];
+                  worksheet['!merges'].push({
+                      s: { r: mergeStart, c: 1 }, // Starting cell (row, column)
+                      e: { r: mergeEnd, c: 1 } // Ending cell (row, column)
+                  });
+              }
+          }
+
+          // Apply column widths
+          worksheet['!cols'] = headers;
+
+          // Append the worksheet and write the file
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Grouped Invoices');
+          XLSX.writeFile(workbook, 'Grouped_Invoices_Report.xlsx');
+      } catch (error) {
+          console.error('Error fetching or exporting items:', error);
+      }
+  };
   
   return (
     <>
@@ -190,60 +316,77 @@ const TableReport: React.FC = () => {
 
       <div className="overflow-x-auto">
         {/* Filter Inputs */}
-        <div className='flex justify-between mt-2 mr-2 mx-2'>
-          <div className="gap-4 mb-4 mt-2">
-            <div className='flex'>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="input input-bordered input-md"
-                placeholder="Start Date"
-              />
-              <div className='mt-3 mx-3 text-sm'>To</div>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="input input-bordered input-md"
-                placeholder="End Date"
-              />
-            </div>
-          </div>
-            <div className="max-w-md mb-3">
-              <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
-                Search
-              </label>
-              {error && <div className="text-red-500">{error}</div>}
-              <div className="relative">
-                <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                    />
-                  </svg>
-                </div>
+        <div className='flex justify-between mr-2 mx-2'>
+            <div className="gap-4 mb-4 mt-2">
+              <div className='flex'>
                 <input
-                  type="text"
-                  value={skuSearch}
-                  onChange={(e) => setSkuSearch(e.target.value)}
-                  id="default-search"
-                  className="block w-full input-md p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
-                  placeholder="Cari sku, barcode sn"
-                  required
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="input input-bordered input-sm"
+                  placeholder="Start Date"
+                />
+                <div className='mt-1 mx-3 text-sm'>To</div>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="input input-bordered input-sm"
+                  placeholder="End Date"
                 />
               </div>
             </div>
+            <div className='flex'>
+              <div className="dropdown mr-2">
+                  <div tabIndex={0} role="button" className="btn btn-success btn-sm text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="25" height="25" viewBox="0 0 48 48">
+                      <path fill="#4CAF50" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"></path><path fill="#FFF" d="M32 15H39V18H32zM32 25H39V28H32zM32 30H39V33H32zM32 20H39V23H32zM25 15H30V18H25zM25 25H30V28H25zM25 30H30V33H25zM25 20H30V23H25z"></path><path fill="#2E7D32" d="M27 42L6 38 6 10 27 6z"></path><path fill="#FFF" d="M19.129,31l-2.411-4.561c-0.092-0.171-0.186-0.483-0.284-0.938h-0.037c-0.046,0.215-0.154,0.541-0.324,0.979L13.652,31H9.895l4.462-7.001L10.274,17h3.837l2.001,4.196c0.156,0.331,0.296,0.725,0.42,1.179h0.04c0.078-0.271,0.224-0.68,0.439-1.22L19.237,17h3.515l-4.199,6.939l4.316,7.059h-3.74V31z"></path>
+                    </svg>
+                    Export Excel
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </div>
+                  <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                    <li><a onClick={handleExportPerItem}>Export Per-item</a></li>
+                    <li><a onClick={handleExportGrouping}>Export Grouping</a></li>
+                  </ul>
+              </div>
+              <div className="max-w-md">
+                <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
+                  Search
+                </label>
+                {error && <div className="text-red-500">{error}</div>}
+                <div className="relative">
+                  <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={skuSearch}
+                    onChange={(e) => setSkuSearch(e.target.value)}
+                    id="default-search"
+                    className="block w-full input-sm p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
+                    placeholder="Cari sku, barcode sn"
+                    required
+                  />
+              </div>
+            </div>
+          </div>
         </div>
         <table className="table">
           {/* Table Head */}

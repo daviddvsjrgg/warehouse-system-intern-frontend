@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import api from '@/services/axiosInstance';
+import { Role } from './utils/interface/userRoleInterface';
+
+// Define a type for the roles
+type RoleName = 'master-item' | 'office'; // Add other roles here as needed
+
+// Define role-based access control configuration
+const rolePermissions: Record<RoleName, string[]> = {
+  'master-item': ['/', '/master-item', '/scanned-item'],
+  'office': ['/', '/report'],
+  // Add additional roles and their allowed routes here
+};
 
 // Middleware function to protect routes based on authentication token
 export async function middleware(request: NextRequest) {
@@ -45,21 +56,17 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check User (Auth or Token Expired)
+  let user;
   try {
-    await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
+    const response = await api.get(`${process.env.NEXT_PUBLIC_USER_API}`, {
       headers: {
         Authorization: `Bearer ${token}`, // Send the token as a bearer token
       },
     });
-    
+    user = response.data; // Assume user data is returned in the response
   } catch (error) {
-    // User info not found
-    if (error instanceof Error) {
-      console.error('User Info Error:', error.message);
-    } else {
-      console.error('Unexpected Error:', error);
-    }
-
+    console.error('User Info Error:', error);
+    
     // Redirect to the login page if fetching user info fails
     const loginUrl = new URL('/login', request.url);
     const response = NextResponse.redirect(loginUrl);
@@ -73,7 +80,26 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Proceed if the user has a valid token
+  // Role-based access control
+  const roles: Role[] = user.roles; // Ensure roles is typed as an array of Role
+  const roleNames: RoleName[] = roles.map((role: Role) => role.name as RoleName); // Get role names as an array of RoleName
+
+  // Check if user has at least one of the allowed roles
+  const hasAccess = roleNames.some(role => role in rolePermissions);
+
+  // Check access permissions based on user role
+  if (hasAccess) {
+    // Allow access if the user has a valid role and is trying to access allowed routes
+    const allowedRoutes = roleNames.flatMap(role => rolePermissions[role]);
+    if (!allowedRoutes.includes(pathname)) {
+      return NextResponse.rewrite(new URL('/404', request.url));
+    }
+  } else {
+    // If the user has none of the allowed roles, show a 404
+    return NextResponse.rewrite(new URL('/404', request.url));
+  }
+
+  // Proceed if the user has a valid token and the correct role
   return NextResponse.next();
 }
 

@@ -115,8 +115,8 @@ const Table: React.FC = () => {
 
         // Map to only include `sku` and `nama_barang`
         const filteredItems = items.map((item: MasterItem) => ({
-          sku: item.sku,
-          nama_barang: item.nama_barang,
+          SKU: item.sku,
+          'Nama Barang': item.nama_barang,
         }));
 
         // Prepare data for Excel
@@ -125,7 +125,7 @@ const Table: React.FC = () => {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'MasterItems');
 
         // Create Excel file and trigger download
-        XLSX.writeFile(workbook, 'master_items.xlsx');
+        XLSX.writeFile(workbook, 'Master_Item.xlsx');
       } else {
         throw new Error('Failed to export data.');
       }
