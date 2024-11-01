@@ -1,22 +1,40 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { logoutUser } from '@/api/auth/auth';
 import Link from 'next/link';
+import { getUser } from '@/api/user/user';
+import { User } from '@/utils/interface/userInterface';
+
+const Spinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 bg-gray-100 z-50">
+    <span className="loading loading-spinner loading-lg"></span>
+  </div>
+);
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = usePathname();  // Get current pathname
+  const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Loading state
 
-  // Memoize the link class generation to avoid recalculating on every render
-  const getLinkClass = useMemo(
-    () => (href: string) => href === pathname ? 'bg-gray-300' : '',
-    [pathname]
-  );
+  // Fetch user roles on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getUser();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false); // End loading regardless of success or failure
+      }
+    };
+    fetchUser();
+  }, []);
 
-  // Function to handle logout
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -25,6 +43,26 @@ const Navbar = () => {
       console.error('Logout error:', error);
     }
   };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+  };
+
+  const renderNavItem = (path: string, label: string) => (
+    <li>
+      <button
+        onClick={() => handleNavigation(path)}
+        className={pathname === path ? 'bg-gray-300 mx-1' : 'mx-1'}
+        aria-label={label}
+      >
+        {label}
+      </button>
+    </li>
+  );
+
+  // Determine access based on user roles
+  const hasMasterItemRole = user?.roles.some(role => role.name === 'master-item');
+  const hasOfficeRole = user?.roles.some(role => role.name === 'office');
 
   return (
     <div className="navbar bg-gray-100 dark:bg-base-100">
@@ -46,64 +84,31 @@ const Navbar = () => {
               />
             </svg>
           </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
-          >
-            <li>
-              <Link 
-                href='/master-item'
-                className={getLinkClass('/master-item')}
-              >
-                Master Item
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href='/scanned-item'
-                className={getLinkClass('/scanned-item')}
-              >
-                Scan SN
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href='/report'
-                className={getLinkClass('/report')}
-              >
-                Report
-              </Link>
-            </li>
+          <ul className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+            {loading ? (
+              <Spinner />
+            ) : (
+              <>
+                {hasMasterItemRole && renderNavItem('/master-item', 'Master Item')}
+                {hasMasterItemRole && renderNavItem('/scanned-item', 'Scan SN')}
+                {hasOfficeRole && renderNavItem('/report', 'Report')}
+              </>
+            )}
           </ul>
         </div>
         <Link href='/' className='btn btn-ghost text-xl'>Warehouse System</Link>
       </div>
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
-          <li>
-            <Link 
-              href='/master-item'
-              className={getLinkClass('/master-item')}
-            >
-              Master Item
-            </Link>
-          </li>
-          <li className='mx-2'>
-            <Link 
-              href='/scanned-item'
-              className={getLinkClass('/scanned-item')}
-            >
-              Scan SN
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href='/report'
-              className={getLinkClass('/report')}
-            >
-              Report
-            </Link>
-          </li>
+          {loading ? (
+            <Spinner />
+          ) : (
+            <>
+              {hasMasterItemRole && renderNavItem('/master-item', 'Master Item')}
+              {hasMasterItemRole && renderNavItem('/scanned-item', 'Scan SN')}
+              {hasOfficeRole && renderNavItem('/report', 'Report')}
+            </>
+          )}
         </ul>
       </div>
       <div className="navbar-end">
@@ -111,7 +116,6 @@ const Navbar = () => {
           <div tabIndex={0} role="button" aria-label="User Menu" className="btn btn-ghost btn-circle avatar">
             <div className="w-10 rounded-full">
               <Image
-                className=""
                 src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
                 alt="User Avatar"
                 width={100}
@@ -120,12 +124,11 @@ const Navbar = () => {
               />
             </div>
           </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
-          >
+          <ul className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
             <li>
-              <button onClick={handleLogout} className="w-full text-left">Logout</button>
+              <button onClick={handleLogout} className="w-full text-left" aria-label="Logout">
+                Logout
+              </button>
             </li>
           </ul>
         </div>

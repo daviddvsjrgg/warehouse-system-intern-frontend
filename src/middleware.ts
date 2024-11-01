@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import api from '@/services/axiosInstance';
-import { Role } from './utils/interface/userRoleInterface';
+import { Role } from '@/utils/interface/userInterface';
 
 // Define a type for the roles
 type RoleName = 'master-item' | 'office'; // Add other roles here as needed

@@ -1,15 +1,6 @@
 import { parseCookies } from 'nookies';
 import api from '@/services/axiosInstance';
-import { Role } from '@/utils/interface/userRoleInterface';
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  email_verified_at: string;
-  created_at: string;
-  updated_at: string;
-  roles: Role[];
-}
+import { User } from '@/utils/interface/userInterface';
 
 export const getUser = async (): Promise<User | null> => {
   try {
