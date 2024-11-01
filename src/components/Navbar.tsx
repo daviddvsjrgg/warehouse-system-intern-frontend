@@ -9,9 +9,10 @@ import { getUser } from '@/api/user/user';
 import { User } from '@/utils/interface/userInterface';
 
 const Spinner = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 bg-gray-100 z-50">
-    <span className="loading loading-spinner loading-lg"></span>
-  </div>
+  <span className="loading loading-ring loading-md"></span>
+  // <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 bg-gray-100 z-50">
+  //   <span className="loading loading-spinner loading-lg"></span>
+  // </div>
 );
 
 const Navbar = () => {
