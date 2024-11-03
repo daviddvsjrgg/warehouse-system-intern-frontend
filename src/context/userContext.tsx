@@ -1,7 +1,8 @@
 "use client"
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getUser } from '@/api/user/user'; // Adjust the import path as needed
-import { User } from '@/utils/interface/userInterface'; // Adjust the import path as needed
+import { getUser } from '@/api/user/user';
+import { User } from '@/utils/interface/userInterface';
 
 interface UserContextType {
   user: User | null;

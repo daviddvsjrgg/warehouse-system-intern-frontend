@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter for navigation
-import { loginUser } from "@/api/auth/auth"; // Ensure the path is correct based on your project structure
+import { useRouter } from "next/navigation";
+import { loginUser } from "@/api/auth/auth";
+import { useUserContext } from "@/context/userContext"; // Import UserContext
 
 const Page = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ const Page = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { refetchUser } = useUserContext(); // Use refetchUser from UserContext
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,12 +35,17 @@ const Page = () => {
     try {
       // Call the login function to authenticate
       await loginUser({ email, password });
+      
+      // Refetch the user data to update the UserContext
+      refetchUser();
+
       router.push("/"); // Redirect after successful login
     } catch (err) {
       const errorMessage = (err as Error).message || "Login failed";
       setError(errorMessage);
-    } finally {
       setIsLoading(false);
+    } finally {
+      setIsLoading(true);
     }
   };
 
@@ -68,7 +75,7 @@ const Page = () => {
                   className="grow"
                   placeholder="Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)} // Update email state
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
               <label
@@ -93,14 +100,13 @@ const Page = () => {
                   placeholder="Password"
                   className="grow"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)} // Update password state
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
             </div>
             {error && (
               <p className="text-red-500 text-sm mt-2 p-1">{error}</p>
-            )}{" "}
-            {/* Display error message */}
+            )}
             <div className="form-control">
               <label className="label cursor-pointer">
                 <span className="label-text">Remember me</span>
