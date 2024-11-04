@@ -44,7 +44,7 @@ const Navbar = () => {
   const hasOfficeRole = user?.roles?.some(role => role.name === 'office');
 
   return (
-    <div className="bg-gray-100 dark:bg-base-100 p-3 flex justify-between">
+    <div className="bg-gray-100 dark:bg-base-100 p-2 flex justify-between">
       {loading && <Spinner />}
 
       <div className="navbar-start lg:hidden">
@@ -63,7 +63,7 @@ const Navbar = () => {
         )}
       </div>
 
-      <p className="text-xl font-semibold p-3 hidden lg:block">Hai, {user?.name}</p>
+      <p className="text-md font-semibold p-3 hidden lg:block">Hai, {user?.name}</p>
 
       <div className="">
         <div className="dropdown dropdown-end">

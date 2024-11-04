@@ -15,7 +15,7 @@ const Page = () => {
         <Navbar />
 
         {/* Page content */}
-        <main className="p-4 flex-1">
+        <main className="p-6 flex-1">
           <div className="card shadow-xl">
             <div className="card-body">
               <h2 className="card-title">Master Item</h2>

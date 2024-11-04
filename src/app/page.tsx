@@ -16,7 +16,7 @@ const Home = () => {
         <Navbar />
 
         {/* Main content */}
-        <main className="p-4 flex-1">
+        <main className="p-8 flex-1">
           <h1 className="text-2xl font-bold">Selamat Datang di Warehouse System</h1>
           <p className="mt-2">Terakhir Deploy Senin, 4 November 2024</p>
           <br />

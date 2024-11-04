@@ -22,7 +22,7 @@ const Sidebar = () => {
   
   return (
     <div className='fixed top-0 left-0 h-full w-64 bg-gray-100 hidden lg:block'>
-      <aside className={`sidebar-default-styles p-3`}>
+      <aside className={`sidebar-default-styles p-2`}>
         <Link href="/" className="text-xl btn btn-ghost">Warehouse System</Link>
         <ul className="space-y-2 p-4">
           {hasMasterItemRole && renderNavItem('/master-item', 'Master Item')}
