@@ -54,7 +54,7 @@ const Page = () => {
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center fixed inset-0 items-center bg-blue-50/55">
       <div className="card w-96 bg-base-100 shadow-xl mt-20 mb-20">
         <div className="card-body">
           <h2 className="card-title">Login Warehouse System</h2>
