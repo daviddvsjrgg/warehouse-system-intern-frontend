@@ -34,18 +34,22 @@ const Page = () => {
 
     try {
       // Call the login function to authenticate
-      await loginUser({ email, password });
+      const response = await loginUser({ email, password });
       
       // Refetch the user data to update the UserContext
       refetchUser();
+
+      if(response) {
+        // Success
+      } else {
+        setIsLoading(false)
+      }
 
       router.push("/"); // Redirect after successful login
     } catch (err) {
       const errorMessage = (err as Error).message || "Login failed";
       setError(errorMessage);
       setIsLoading(false);
-    } finally {
-      setIsLoading(true);
     }
   };
 
