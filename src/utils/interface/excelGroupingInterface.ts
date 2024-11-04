@@ -1,3 +1,4 @@
+// Adjust the interfaces
 export interface Item {
     created_at: string;
     invoice_number: string;
@@ -6,6 +7,7 @@ export interface Item {
         nama_barang: string;
     };
     user: {
+        name: string;    // Add name field
         email: string;
     };
     barcode_sn: string;
@@ -21,15 +23,15 @@ export interface GroupedItem {
         'Barcode SN': string;
         Quantity: number;
     }>;
-    Email: string;
+    User: string; // Update to User instead of Email
 }
 
 export interface ExportData {
     Date: string;
     'Invoice Number': string;
-    Email: string;
-    SKU: string; // Choose how to represent multiple SKUs
+    User: string; // Combined Name and Email
+    SKU: string;
     'Nama Barang': string;
     'Barcode SN': string;
-    Quantity: number; // Total Quantity
+    Quantity: number;
 }
