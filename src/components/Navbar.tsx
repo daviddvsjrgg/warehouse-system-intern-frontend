@@ -44,7 +44,8 @@ const Navbar = () => {
   const hasOfficeRole = user?.roles?.some(role => role.name === 'office');
 
   return (
-    <div className="bg-gray-100 dark:bg-base-100 p-2 flex justify-between">
+    // <div className="bg-gray-100 p-2 dark:bg-base-100 flex justify-between">
+    <div className="flex justify-between p-2">
       {loading && <Spinner />}
 
       <div className="navbar-start lg:hidden">

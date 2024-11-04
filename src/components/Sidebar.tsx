@@ -21,7 +21,7 @@ const Sidebar = () => {
   const hasOfficeRole = user?.roles?.some(role => role.name === 'office');
   
   return (
-    <div className='fixed top-0 left-0 h-full w-64 bg-gray-100 hidden lg:block'>
+    <div className='fixed top-0 left-0 h-full w-64 bg-white hidden lg:block'>
       <aside className={`sidebar-default-styles p-2`}>
         <Link href="/" className="text-xl btn btn-ghost">Warehouse System</Link>
         <ul className="space-y-2 p-4">

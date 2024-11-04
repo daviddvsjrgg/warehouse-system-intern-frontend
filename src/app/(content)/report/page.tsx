@@ -18,7 +18,7 @@ const Page = () => {
 
         {/* Page content */}
         <main className="p-6 flex-1">
-          <div className="card shadow-xl">
+          <div className="card shadow-xl bg-white">
             <div className="card-body overflow-x-auto">
               <h2 className="card-title">Report Item Barang</h2>
               <TableReport />
