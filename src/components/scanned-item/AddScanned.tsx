@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 import React, { useState, useEffect } from 'react';
-import { fetchMasterItemBySKU } from '@/api/master-item/master-item';
+import { fetchMasterItemBySKUorNamaBarang } from '@/api/master-item/master-item';
 import useDebounce from '@/hooks/useDebounce';
 import { addScannedItems } from '@/api/scanned-item/scanned-item';
 
@@ -26,7 +26,7 @@ const AddScanned = () => {
   const debouncedSKU = useDebounce(sku, 500);
   const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
 
-  const handleSearchBySKU = async (debouncedSKU: string) => {
+  const handleSearchBySKUOrNamaBarang = async (debouncedSKU: string) => {
     setError(null);
     setLoading(true);
 
@@ -37,7 +37,7 @@ const AddScanned = () => {
     }
 
     try {
-      const item = await fetchMasterItemBySKU(debouncedSKU);
+      const item = await fetchMasterItemBySKUorNamaBarang(debouncedSKU);
 
       setItems((prevItems) => [
         ...prevItems,
@@ -57,7 +57,7 @@ const AddScanned = () => {
 
   useEffect(() => {
     if (debouncedBarcodeSN && debouncedSKU && invoiceNumber) {
-      handleSearchBySKU(debouncedSKU);
+      handleSearchBySKUOrNamaBarang(debouncedSKU);
     }
   }, [debouncedBarcodeSN, debouncedSKU, invoiceNumber]);
 
