@@ -141,29 +141,3 @@ export const deleteMasterItem = async (id: number): Promise<{ success: boolean; 
 
   return response.data;
 };
-
-export const fetchMasterItemBySKUorNamaBarang = async (value: string): Promise<ItemDetails> => {
-  const cookies = parseCookies();
-  const token = cookies.token;
-
-  if (!token) {
-    throw new Error('No token found');
-  }
-
-  const response = await api.get<ApiResponse>(
-    `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}?query=${value}&exact=true`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  const { status_code, success, message, data } = response.data;
-
-  if (!success || status_code !== 200 || !data || data.length === 0) {
-    throw new Error(`Item with SKU "${value}" not found: ${message}`);
-  }
-
-  return data[0]; // Return the first (and ideally only) item
-};
