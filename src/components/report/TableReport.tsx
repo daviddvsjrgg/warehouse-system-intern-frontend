@@ -117,7 +117,7 @@ const TableReport: React.FC = () => {
 
   const handleExportPerItem = async () => {
     try {
-        const items = await fetchScannedItems(1, 10000, '', startDate, endDate);
+        const items = await fetchScannedItems(1, 10000, debouncedSkuSearch, startDate, endDate);
 
         // Map fetched items to export data with User field
         const exportData = items.map(item => ({
@@ -130,8 +130,25 @@ const TableReport: React.FC = () => {
             Quantity: item.qty,
         }));
 
+        // Create worksheet and workbook
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
+
+        // Define column widths
+        const headers = [
+            { wch: 20 }, // Date
+            { wch: 20 }, // Invoice Number
+            { wch: 15 }, // SKU
+            { wch: 40 }, // Nama Barang
+            { wch: 20 }, // User
+            { wch: 20 }, // Barcode SN
+            { wch: 10 }  // Quantity
+        ];
+
+        // Apply column widths
+        worksheet['!cols'] = headers;
+
+        // Append worksheet to workbook and export file
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Scanned Per Items');
         XLSX.writeFile(workbook, 'Scanned_Per_Items_Report.xlsx');
     } catch (error) {
@@ -139,88 +156,88 @@ const TableReport: React.FC = () => {
     }
 };
 
+
 const handleExportGrouping = async (): Promise<void> => {
-    try {
-        const items: Item[] = await fetchScannedItems(1, 10000, '', startDate, endDate);
+  try {
+      const items: Item[] = await fetchScannedItems(1, 10000, debouncedSkuSearch, startDate, endDate);
 
-        const groupedData: Record<string, GroupedItem> = items.reduce((acc, item) => {
-            const invoice = item.invoice_number;
+      // Group items by Invoice Number and SKU/Nama Barang
+      const groupedData: Record<string, GroupedItem> = items.reduce((acc, item) => {
+          const invoice = item.invoice_number;
 
-            if (!acc[invoice]) {
-                acc[invoice] = {
-                    Date: convertToJakartaTime(item.created_at),
-                    'Invoice Number': invoice,
-                    Items: [],
-                    User: item.user.name,
-                };
-            }
-            acc[invoice].Items.push({
-                SKU: item.sku,
-                'Nama Barang': item.master_item.nama_barang,
-                'Barcode SN': item.barcode_sn,
-                Quantity: item.qty,
-            });
+          if (!acc[invoice]) {
+              acc[invoice] = {
+                  Date: convertToJakartaTime(item.created_at),
+                  'Invoice Number': invoice,
+                  Items: [],
+                  User: item.user.name,
+              };
+          }
 
-            return acc;
-        }, {} as Record<string, GroupedItem>);
+          // Check if an item with the same SKU/Nama Barang already exists in the group
+          const existingItem = acc[invoice].Items.find(
+              i => i.SKU === item.sku && i['Nama Barang'] === item.master_item.nama_barang
+          );
 
-        const exportData: ExportData[] = Object.values(groupedData).map(group => {
-            const firstItem = group.Items[0];
-            const barcodeList = group.Items.map((item) => `${item['Barcode SN']}`).join(', ');
+          if (existingItem) {
+              // Append Barcode SN and add Quantity if the item already exists
+              existingItem['Barcode SN'] += `, ${item.barcode_sn}`;
+              existingItem.Quantity += item.qty;
+          } else {
+              // Add as a new item if it doesn't exist
+              acc[invoice].Items.push({
+                  SKU: item.sku,
+                  'Nama Barang': item.master_item.nama_barang,
+                  'Barcode SN': item.barcode_sn,
+                  Quantity: item.qty,
+              });
+          }
 
-            return {
-                Date: group.Date,
-                'Invoice Number': group['Invoice Number'],
-                User: group.User,
-                SKU: firstItem.SKU,
-                'Nama Barang': firstItem['Nama Barang'],
-                'Barcode SN': barcodeList,
-                Quantity: group.Items.reduce((total, item) => total + item.Quantity, 0),
-            };
-        });
+          return acc;
+      }, {} as Record<string, GroupedItem>);
 
-        const worksheet = XLSX.utils.json_to_sheet(exportData, { skipHeader: true });
-        const workbook = XLSX.utils.book_new();
+      // Flatten grouped data to an array, leaving Date, Invoice Number, and User only on the first row of each group
+      const exportData: ExportData[] = Object.values(groupedData).flatMap(group => {
+          return group.Items.map((item, index) => ({
+              Date: index === 0 ? group.Date : '',  // Only the first row includes the Date
+              'Invoice Number': index === 0 ? group['Invoice Number'] : '', // Only the first row includes the Invoice Number
+              User: index === 0 ? group.User : '', // Only the first row includes the User
+              SKU: item.SKU,
+              'Nama Barang': item['Nama Barang'],
+              'Barcode SN': item['Barcode SN'],
+              Quantity: item.Quantity,
+          }));
+      });
 
-        const headers = [
-            { wch: 20 },
-            { wch: 25 },
-            { wch: 40 }, // Adjusted width for User column
-            { wch: 15 },
-            { wch: 25 },
-            { wch: 40 },
-            { wch: 10 }
-        ];
+      // Create worksheet and workbook
+      const worksheet = XLSX.utils.json_to_sheet(exportData, { skipHeader: true });
+      const workbook = XLSX.utils.book_new();
 
-        XLSX.utils.sheet_add_aoa(worksheet, [['Date', 'Invoice Number', 'User', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity']], { origin: 'A1' });
-        XLSX.utils.sheet_add_json(worksheet, exportData, { header: ['Date', 'Invoice Number', 'User', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity'], skipHeader: true, origin: 'A2' });
+      // Set up headers with the specified widths
+      const headers = [
+          { wch: 20 }, // Date
+          { wch: 20 }, // Invoice Number
+          { wch: 20 }, // User
+          { wch: 15 }, // SKU
+          { wch: 40 }, // Nama Barang
+          { wch: 20 }, // Barcode SN
+          { wch: 10 }  // Quantity
+      ];
 
-        const range = XLSX.utils.decode_range(worksheet['!ref'] || "A1:A1");
+      // Adding headers to the worksheet
+      XLSX.utils.sheet_add_aoa(worksheet, [['Date', 'Invoice Number', 'User', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity']], { origin: 'A1' });
+      XLSX.utils.sheet_add_json(worksheet, exportData, { header: ['Date', 'Invoice Number', 'User', 'SKU', 'Nama Barang', 'Barcode SN', 'Quantity'], skipHeader: true, origin: 'A2' });
 
-        for (let row = 2; row <= range.e.r; row++) {
-            if (
-                worksheet[XLSX.utils.encode_cell({ r: row, c: 1 })]?.v === 
-                worksheet[XLSX.utils.encode_cell({ r: row - 1, c: 1 })]?.v
-            ) {
-                const mergeStart = row - 1;
-                const mergeEnd = row;
+      // Apply column widths
+      worksheet['!cols'] = headers;
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Grouped Invoices');
 
-                if (!worksheet['!merges']) worksheet['!merges'] = [];
-                worksheet['!merges'].push({
-                    s: { r: mergeStart, c: 1 },
-                    e: { r: mergeEnd, c: 1 }
-                });
-            }
-        }
-
-        worksheet['!cols'] = headers;
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Grouped Invoices');
-        XLSX.writeFile(workbook, 'Grouped_Invoices_Report.xlsx');
-    } catch (error) {
-        console.error('Error fetching or exporting items:', error);
-    }
+      // Write the file
+      XLSX.writeFile(workbook, 'Grouped_Invoices_Report.xlsx');
+  } catch (error) {
+      console.error('Error fetching or exporting items:', error);
+  }
 };
-
   
   return (
     <>
