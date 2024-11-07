@@ -459,8 +459,8 @@ const AddScanned = () => {
 
         {itemList.length > 0 && (
          <div className="mt-4">
-            <button type="submit" className="btn btn-primary w-1/2" disabled={loading}>
-              {loading ? 'Submit' : 'Submit'}
+            <button type="submit" className={`btn btn-primary w-1/2 ${loading ? 'animate-pulse' : ''}`} disabled={loading}>
+              {loading ? 'Submitting..' : 'Submit'}
             </button>
         
             {/* Display error below the submit button if there is a submission error */}
