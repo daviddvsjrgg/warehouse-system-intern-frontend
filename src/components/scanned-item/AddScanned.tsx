@@ -255,112 +255,115 @@ const AddScanned = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Scan SN */}  
-      <div className="space-y-3">
-        <div className="w-1/2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
-          <input
-            type="text"
-            placeholder="Enter Invoice Number"
-            className="input input-bordered w-full"
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-          />
-          {error.invoiceNumber && <div className="text-red-600 text-sm mt-1">{error.invoiceNumber}</div>}
-        </div>
-
-        <div className="relative w-1/2">
-          <label className="text-sm font-medium text-gray-700">SKU / Nama Barang</label>
-          <button
-            type="button"
-            onClick={toggleDropdown}
-            className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-200"
-          >
-            <span>{selectedItem}</span> {/* This will show 'Cari Barang' until an item is selected */}
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fillRule="evenodd" d="M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {isOpen && (
-            <div className="absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 p-1 max-h-60 overflow-auto z-10"
-                 onScroll={handleScroll}>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-1">
+          {/* Scan SN */}  
+          <div className="space-y-3">
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
               <input
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="block w-full px-4 py-2 text-gray-800 border rounded-md border-gray-300 focus:outline-none"
                 type="text"
-                placeholder="Search items"
-                autoComplete="off"
+                placeholder="Enter Invoice Number"
+                className="input input-bordered w-full"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
               />
-
-              {filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <a key={item.id} onClick={() => { setSelectedItem(`${item.sku} | ${item.nama_barang}`); setSelectedItemId(item.id); setIsOpen(false); }} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
-                    {item.sku} | {item.nama_barang}
-                  </a>
-                ))
-              ) : (
-                <div className="px-4 py-2 text-gray-500">No items found</div>
-              )}
-              {loading && <div className="px-4 py-2 text-gray-500">Loading...</div>}
+              {error.invoiceNumber && <div className="text-red-600 text-sm mt-1">{error.invoiceNumber}</div>}
             </div>
-          )}
-          {error.selectedItem && <div className="text-red-600 text-sm mt-1">{error.selectedItem}</div>}
-        </div>
 
-        <div className="w-1/2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Barcode SN</label>
-          <input
-            type="text"
-            placeholder="Enter Barcode SN"
-            className="input input-bordered w-full"
-            value={barcodeSN}
-            onChange={(e) => setBarcodeSN(e.target.value)}
-          />
-          {error.barcodeSN && <div className="text-red-600 text-sm mt-1">{error.barcodeSN}</div>}
-        </div>
+            <div className="relative w-full">
+              <label className="text-sm font-medium text-gray-700">SKU / Nama Barang</label>
+              <button
+                type="button"
+                onClick={toggleDropdown}
+                className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-200"
+              >
+                <span>{selectedItem}</span> {/* This will show 'Cari Barang' until an item is selected */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
 
-        <button
-          type="button"
-          className="bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 w-1/2"
-          onClick={handleAddItem}
-          disabled={loadingAddingItem}
-        >
-          {loadingAddingItem ? 'Adding...' : 'Add Item'}
-        </button>
-      </div>
+              {isOpen && (
+                <div className="absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 p-1 max-h-60 overflow-auto z-10"
+                    onScroll={handleScroll}>
+                  <input
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="block w-full px-4 py-2 text-gray-800 border rounded-md border-gray-300 focus:outline-none"
+                    type="text"
+                    placeholder="Search items"
+                    autoComplete="off"
+                  />
 
-      <div className='divider'></div>
-      {/* Summary */}
-      <div className="w-1/2 mt-4">
-        <div className="font-bold mb-2">Summary</div>
-        <div className="grid grid-cols-1 gap-2 bg-white p-4 border border-gray-300 rounded-lg shadow-md">
-          <div className="flex justify-between">
-            <span className="font-medium">Total Quantity (All Invoices):</span>
-            <span>{itemList.reduce((sum, item) => sum + item.qty, 0)}</span>
+                  {filteredItems.length > 0 ? (
+                    filteredItems.map((item) => (
+                      <a key={item.id} onClick={() => { setSelectedItem(`${item.sku} | ${item.nama_barang}`); setSelectedItemId(item.id); setIsOpen(false); }} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                        {item.sku} | {item.nama_barang}
+                      </a>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-gray-500">No items found</div>
+                  )}
+                  {loading && <div className="px-4 py-2 text-gray-500">Loading...</div>}
+                </div>
+              )}
+              {error.selectedItem && <div className="text-red-600 text-sm mt-1">{error.selectedItem}</div>}
+            </div>
+
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Barcode SN</label>
+              <input
+                type="text"
+                placeholder="Enter Barcode SN"
+                className="input input-bordered w-full"
+                value={barcodeSN}
+                onChange={(e) => setBarcodeSN(e.target.value)}
+              />
+              {error.barcodeSN && <div className="text-red-600 text-sm mt-1">{error.barcodeSN}</div>}
+            </div>
+
+            <button
+              type="button"
+              className="bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 w-full"
+              onClick={handleAddItem}
+              disabled={loadingAddingItem}
+            >
+              {loadingAddingItem ? 'Adding...' : 'Add Item'}
+            </button>
           </div>
-            <div className='divider -my-2'></div>
-          {Object.entries(
-            itemList.reduce<{ [key: string]: PreviewItem[] }>((acc, item) => {
-              if (!acc[item.invoiceNumber]) {
-                acc[item.invoiceNumber] = [];
-              }
-              acc[item.invoiceNumber].push(item);
-              return acc;
-            }, {})
-          ).map(([invoiceNumber, invoiceItems]) => {
-            const totalInvoiceQuantity = invoiceItems.reduce((sum, item) => sum + item.qty, 0);
-            return (
-              <div key={invoiceNumber} className="flex justify-between">
-                <span>Invoice {invoiceNumber} Total Quantity:</span>
-                <span>{totalInvoiceQuantity}</span>
+        </div>
+        <div className="col-span-1">
+          {/* Summary */}
+            <div className="w-full">
+              <div className="font-bold">Summary</div>
+              <div className="grid grid-cols-1 gap-2 bg-white p-4 border border-gray-300 rounded-lg shadow-md">
+                <div className="flex justify-between">
+                  <span className="font-medium">Total Quantity (All Invoices):</span>
+                  <span>{itemList.reduce((sum, item) => sum + item.qty, 0)}</span>
+                </div>
+                <div className='divider -my-2'></div>
+                {Object.entries(
+                  itemList.reduce<{ [key: string]: PreviewItem[] }>((acc, item) => {
+                    if (!acc[item.invoiceNumber]) {
+                      acc[item.invoiceNumber] = [];
+                    }
+                    acc[item.invoiceNumber].push(item);
+                    return acc;
+                  }, {})
+                ).map(([invoiceNumber, invoiceItems]) => {
+                  const totalInvoiceQuantity = invoiceItems.reduce((sum, item) => sum + item.qty, 0);
+                  return (
+                    <div key={invoiceNumber} className="flex justify-between">
+                      <span>Invoice {invoiceNumber} Total Quantity:</span>
+                      <span>{totalInvoiceQuantity}</span>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
         </div>
       </div>
-
       <div className='divider'></div>
       {/* Items Preview */}  
       <div className=''>
@@ -457,7 +460,7 @@ const AddScanned = () => {
         {itemList.length > 0 && (
          <div className="mt-4">
             <button type="submit" className="btn btn-primary w-1/2" disabled={loading}>
-              {loading ? 'Submitting...' : 'Submit Scanned Items'}
+              {loading ? 'Submit' : 'Submit'}
             </button>
         
             {/* Display error below the submit button if there is a submission error */}
