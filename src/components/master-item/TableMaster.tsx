@@ -287,7 +287,7 @@ const Table: React.FC = () => {
               </>
             ) : (
               items.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-100">
+                <tr key={item.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                   <td>{item.sku}</td>
                   <td>{item.nama_barang}</td>
                   <td>

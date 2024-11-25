@@ -411,7 +411,7 @@ const handleExportGrouping = async (): Promise<void> => {
               </tr>
             ) : (
               scannedItems.map((item) => (
-                <tr key={item.id} className={`hover:bg-base-200`}>
+                <tr key={item.id} className={`hover:bg-base-200 dark:hover:bg-gray-700"`}>
                   <td>{convertToJakartaTime(item.created_at)}</td>
                   <td>{item.sku}</td>
                   <td>

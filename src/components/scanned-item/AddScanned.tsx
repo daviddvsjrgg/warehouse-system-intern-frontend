@@ -260,11 +260,11 @@ const AddScanned = () => {
           {/* Scan SN */}  
           <div className="space-y-3">
             <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Invoice Number</label>
               <input
                 type="text"
                 placeholder="Enter Invoice Number"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
               />
@@ -272,25 +272,39 @@ const AddScanned = () => {
             </div>
 
             <div className="relative w-full">
-              <label className="text-sm font-medium text-gray-700">SKU / Nama Barang</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                SKU / Nama Barang
+              </label>
               <button
                 type="button"
                 onClick={toggleDropdown}
-                className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-200"
+                className="flex justify-between items-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm dark:text-gray-300 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-gray-200 dark:focus:ring-gray-500"
               >
                 <span>{selectedItem}</span> {/* This will show 'Cari Barang' until an item is selected */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
 
               {isOpen && (
-                <div className="absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 p-1 max-h-60 overflow-auto z-10"
-                    onScroll={handleScroll}>
+                <div
+                  className="absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-opacity-10 p-1 max-h-60 overflow-auto z-10"
+                  onScroll={handleScroll}
+                >
                   <input
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    className="block w-full px-4 py-2 text-gray-800 border rounded-md border-gray-300 focus:outline-none"
+                    className="block w-full px-4 py-2 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border rounded-md border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-500"
                     type="text"
                     placeholder="Search items"
                     autoComplete="off"
@@ -298,25 +312,36 @@ const AddScanned = () => {
 
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
-                      <a key={item.id} onClick={() => { setSelectedItem(`${item.sku} | ${item.nama_barang}`); setSelectedItemId(item.id); setIsOpen(false); }} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                      <a
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedItem(`${item.sku} | ${item.nama_barang}`);
+                          setSelectedItemId(item.id);
+                          setIsOpen(false);
+                        }}
+                        className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                      >
                         {item.sku} | {item.nama_barang}
                       </a>
                     ))
                   ) : (
-                    <div className="px-4 py-2 text-gray-500">No items found</div>
+                    <div className="px-4 py-2 text-gray-500 dark:text-gray-400">No items found</div>
                   )}
-                  {loading && <div className="px-4 py-2 text-gray-500">Loading...</div>}
+                  {loading && <div className="px-4 py-2 text-gray-500 dark:text-gray-400">Loading...</div>}
                 </div>
               )}
-              {error.selectedItem && <div className="text-red-600 text-sm mt-1">{error.selectedItem}</div>}
+              {error.selectedItem && (
+                <div className="text-red-600 dark:text-red-400 text-sm mt-1">{error.selectedItem}</div>
+              )}
             </div>
 
+
             <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Barcode SN</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Barcode SN</label>
               <input
                 type="text"
                 placeholder="Enter Barcode SN"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 value={barcodeSN}
                 onChange={(e) => setBarcodeSN(e.target.value)}
               />
@@ -337,7 +362,7 @@ const AddScanned = () => {
           {/* Summary */}
             <div className="w-full">
               <div className="font-bold">Summary</div>
-              <div className="grid grid-cols-1 gap-2 bg-white p-4 border border-gray-300 rounded-lg shadow-md">
+              <div className="bg-white dark:bg-gray-800 p-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md">
                 <div className="flex justify-between">
                   <span className="font-medium">Total Quantity (All Invoices):</span>
                   <span>{itemList.reduce((sum, item) => sum + item.qty, 0)}</span>
@@ -401,7 +426,7 @@ const AddScanned = () => {
                 return acc;
               }, {})
             ).map(([invoiceNumber, invoiceItems]) => (
-              <div key={invoiceNumber} className="collapse collapse-plus bg-white bg-blur-100 border border-gray-300 rounded-lg shadow-md mb-4">
+              <div key={invoiceNumber} className="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-4">
                 <input type="checkbox" className="collapse-checkbox" id={`invoice-${invoiceNumber}`} />
                 <div className="collapse-title text-xl font-medium">
                   Invoice: {invoiceNumber}
@@ -422,26 +447,26 @@ const AddScanned = () => {
                     const totalQuantity = skuItems.reduce((sum, item) => sum + item.qty, 0);
 
                     return (
-                      <div key={sku} className="collapse collapse-arrow bg-white bg-opacity-80 border border-gray-300 rounded-lg shadow-md mb-2">
+                      <div key={sku} className="collapse collapse-arrow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-2">
                         <input type="checkbox" className="collapse-checkbox" id={`sku-${sku}`} />
                         <div className="collapse-title text-lg font-medium">
                           {sku}
-                          <span className="ml-4 text-sm text-gray-500">(Total Quantity: {totalQuantity})</span>
+                          <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">(Total Quantity: {totalQuantity})</span>
                         </div>
                         <div className="collapse-content">
                           {/* Display barcode and quantity in a table with borders */}
                           <table className="min-w-full table">
                             <thead>
-                              <tr className="text-left bg-gray-50">
-                                <th className="px-4 py-2">Barcode SN</th>
-                                <th className="px-4 py-2">Quantity</th>
+                              <tr className="text-left bg-gray-50 dark:bg-gray-700">
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">Barcode SN</th>
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">Quantity</th>
                               </tr>
                             </thead>
                             <tbody>
                               {skuItems.map((item) => (
-                                <tr key={item.barcode_sn} className="bg-white hover:bg-gray-100">
-                                  <td className="px-4 py-2">{item.barcode_sn}</td>
-                                  <td className="px-4 py-2">{item.qty}</td>
+                                <tr key={item.barcode_sn} className="bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.barcode_sn}</td>
+                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.qty}</td>
                                 </tr>
                               ))}
                             </tbody>

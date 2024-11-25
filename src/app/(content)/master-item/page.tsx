@@ -5,7 +5,7 @@ import TableMaster from '@/components/master-item/TableMaster';
 
 const Page = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen dark:bg-gray-900">
       {/* Fixed Sidebar */}
       <Sidebar />
 
@@ -16,8 +16,8 @@ const Page = () => {
 
         {/* Page content */}
         <main className="p-6 flex-1">
-          <div className="card shadow-xl bg-white">
-            <div className="card-body">
+          <div className="card shadow-xl bg-white dark:bg-gray-800">
+            <div className="card-body text-gray-900 dark:text-gray-100">
               <h2 className="card-title">Master Item</h2>
               <TableMaster />
             </div>

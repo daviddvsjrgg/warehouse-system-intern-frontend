@@ -7,7 +7,7 @@ import TableReport from '@/components/report/TableReport';
 
 const Page = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen dark:bg-gray-900">
       {/* Fixed Sidebar */}
       <Sidebar />
 
@@ -18,8 +18,8 @@ const Page = () => {
 
         {/* Page content */}
         <main className="p-6 flex-1">
-          <div className="card shadow-xl bg-white">
-            <div className="card-body overflow-x-auto">
+          <div className="card shadow-xl bg-white dark:bg-gray-800">
+            <div className="card-body text-gray-900 dark:text-gray-100 overflow-x-auto">
               <h2 className="card-title">Report Item Barang</h2>
               <TableReport />
             </div>
