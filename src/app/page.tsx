@@ -21,7 +21,7 @@ const Home = () => {
             <div className="card-body overflow-x-auto">
               {/* Welcome Message */}
               <h1 className="text-2xl font-bold dark:text-gray-200">
-                Selamat Datang di Warehouse System (Test FTP)
+                Selamat Datang di Warehouse System
               </h1>
               <p className="mt-2 divider -mb-1 dark:text-gray-400">
                 Intern Self Deployed | Description:
