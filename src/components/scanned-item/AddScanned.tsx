@@ -69,13 +69,19 @@ const AddScanned = () => {
   };
 
   useEffect(() => {
-    // Automatically trigger handleAddItem when debouncedBarcodeSN changes
-    if (barcodeSN.trim() === '' || error.barcodeSN) return; // Skip if barcodeSN is empty or there is an error
+    // Skip if barcodeSN is empty or if the error related to barcodeSN is set
+    if (debouncedBarcodeSN.trim() === '') return;
   
+    // If barcodeSN is valid, automatically add the item
     if (debouncedBarcodeSN) {
       handleAddItem();
     }
-  }, [debouncedBarcodeSN, error.barcodeSN]);
+  }, [debouncedBarcodeSN]);
+
+  useEffect(() => {
+    // When either invoiceNumber or selectedItem (namaBarang) changes, clear the barcodeSN
+    setBarcodeSN('');
+  }, [invoiceNumber, selectedItem]); 
 
   useEffect(() => {
     if (debouncedSearchTerm || debouncedSearchTerm === '') {
@@ -101,6 +107,7 @@ const AddScanned = () => {
   const handleAddItem = async () => {
     let hasError = false;
   
+    // Reset error state
     setError({
       invoiceNumber: '',
       selectedItem: '',
@@ -108,21 +115,25 @@ const AddScanned = () => {
       submitError: ''
     });
   
+    // Check if invoice number is empty
     if (!invoiceNumber) {
       setError(prev => ({ ...prev, invoiceNumber: 'Invoice Number is required.' }));
       hasError = true;
     }
   
+    // Check if item is selected
     if (!selectedItemId) {
       setError(prev => ({ ...prev, selectedItem: 'Please select an item.' }));
       hasError = true;
     }
   
+    // Check if barcode SN is empty
     if (!barcodeSN) {
       setError(prev => ({ ...prev, barcodeSN: 'Barcode SN is required.' }));
       hasError = true;
     }
   
+    // Check if the barcode SN already exists in the preview list
     const isBarcodeInPreview = itemList.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
     if (isBarcodeInPreview) {
       setError(prev => ({ ...prev, barcodeSN: 'This Barcode SN is already added.' }));
@@ -134,26 +145,28 @@ const AddScanned = () => {
     setLoadingAddingItem(true);
   
     try {
-      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase());
-      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase());
+      // Fetch scanned items to check for duplicates by invoiceNumber
+      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase()); // Search by invoiceNumber (case-insensitive)
+      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase()); // Search by barcodeSN (case-insensitive)
   
       const isInvoiceDuplicate = existingInvoiceItems.some(item => item.invoice_number.toLowerCase() === invoiceNumber.toLowerCase());
       const isBarcodeDuplicate = existingBarcodeItems.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
   
       if (isInvoiceDuplicate) {
         setError(prev => ({ ...prev, invoiceNumber: 'Invoice number already exists.' }));
-        setLoadingAddingItem(false);
+        setLoadingAddingItem(false);  // Stop loading
         return;
       }
   
       if (isBarcodeDuplicate) {
-        setError(prev => ({ ...prev, barcodeSN: 'Barcode SN already exists.' }));
-        setLoadingAddingItem(false);
+        setError(prev => ({ ...prev, barcodeSN: 'This Barcode SN is already added.' }));
+        setLoadingAddingItem(false);  // Stop loading
         return;
       }
   
+      // Proceed to add item to the list if no duplicates
       const newItem = {
-        id: selectedItemId,
+        id: selectedItemId, // Added item ID for submission
         invoiceNumber: invoiceNumber,
         sku: selectedItem.split(' | ')[0],
         namaBarang: selectedItem.split(' | ')[1],
@@ -161,14 +174,16 @@ const AddScanned = () => {
         qty: 1,
       };
   
-      setItemList(prevList => [...prevList, newItem]);
+      setItemList((prevList) => [...prevList, newItem]);
+  
+      // Clear inputs after adding to preview
       setBarcodeSN('');
-      setLoadingAddingItem(false);
+      setLoadingAddingItem(false);  // Stop loading
     } catch (error) {
       console.error('Error checking duplicates:', error);
-      setLoadingAddingItem(false);
+      setLoadingAddingItem(false);  // Stop loading on error
     }
-  };
+  };  
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -427,8 +442,16 @@ const AddScanned = () => {
                 return acc;
               }, {})
             ).map(([invoiceNumber, invoiceItems]) => (
-              <div key={invoiceNumber} className="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-4">
-                <input type="checkbox" className="collapse-checkbox" id={`invoice-${invoiceNumber}`} />
+              <div
+                key={invoiceNumber}
+                className="collapse collapse-plus bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-4"
+              >
+                <input
+                  type="checkbox"
+                  className="collapse-checkbox"
+                  id={`invoice-${invoiceNumber}`}
+                  defaultChecked // Open by default
+                />
                 <div className="collapse-title text-xl font-medium">
                   Invoice: {invoiceNumber}
                 </div>
@@ -448,26 +471,47 @@ const AddScanned = () => {
                     const totalQuantity = skuItems.reduce((sum, item) => sum + item.qty, 0);
 
                     return (
-                      <div key={sku} className="collapse collapse-arrow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-2">
-                        <input type="checkbox" className="collapse-checkbox" id={`sku-${sku}`} />
+                      <div
+                        key={sku}
+                        className="collapse collapse-arrow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md mb-2"
+                      >
+                        <input
+                          type="checkbox"
+                          className="collapse-checkbox"
+                          id={`sku-${sku}`}
+                          defaultChecked // Open by default
+                        />
                         <div className="collapse-title text-lg font-medium">
                           {sku}
-                          <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">(Total Quantity: {totalQuantity})</span>
+                          <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
+                            (Total Quantity: {totalQuantity})
+                          </span>
                         </div>
                         <div className="collapse-content">
                           {/* Display barcode and quantity in a table with borders */}
                           <table className="min-w-full table">
                             <thead>
                               <tr className="text-left bg-gray-50 dark:bg-gray-700">
-                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">Barcode SN</th>
-                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">Quantity</th>
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                  Barcode SN
+                                </th>
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                  Quantity
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {skuItems.map((item) => (
-                                <tr key={item.barcode_sn} className="bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700">
-                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.barcode_sn}</td>
-                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{item.qty}</td>
+                                <tr
+                                  key={item.barcode_sn}
+                                  className="bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                >
+                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                    {item.barcode_sn}
+                                  </td>
+                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                    {item.qty}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -479,6 +523,7 @@ const AddScanned = () => {
                 </div>
               </div>
             ))}
+
           </div>
         )}
 
