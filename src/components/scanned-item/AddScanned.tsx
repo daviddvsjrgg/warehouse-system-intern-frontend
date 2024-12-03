@@ -34,6 +34,7 @@ const AddScanned = () => {
 
   const per_page = 10;
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedBarcodeSN = useDebounce(barcodeSN, 500);
 
   const toggleDropdown = () => {
     setIsOpen((prev) => !prev);
@@ -68,6 +69,15 @@ const AddScanned = () => {
   };
 
   useEffect(() => {
+    // Automatically trigger handleAddItem when debouncedBarcodeSN changes
+    if (barcodeSN.trim() === '' || error.barcodeSN) return; // Skip if barcodeSN is empty or there is an error
+  
+    if (debouncedBarcodeSN) {
+      handleAddItem();
+    }
+  }, [debouncedBarcodeSN, error.barcodeSN]);
+
+  useEffect(() => {
     if (debouncedSearchTerm || debouncedSearchTerm === '') {
       setItems([]);
       setPage(1);
@@ -90,82 +100,73 @@ const AddScanned = () => {
 
   const handleAddItem = async () => {
     let hasError = false;
-
-    // Reset error state first
+  
     setError({
       invoiceNumber: '',
       selectedItem: '',
       barcodeSN: '',
       submitError: ''
     });
-
-    // Check if invoice number is empty
+  
     if (!invoiceNumber) {
       setError(prev => ({ ...prev, invoiceNumber: 'Invoice Number is required.' }));
       hasError = true;
     }
-
-    // Check if item is selected
+  
     if (!selectedItemId) {
       setError(prev => ({ ...prev, selectedItem: 'Please select an item.' }));
       hasError = true;
     }
-
-    // Check if barcode SN is empty
+  
     if (!barcodeSN) {
       setError(prev => ({ ...prev, barcodeSN: 'Barcode SN is required.' }));
       hasError = true;
     }
-
-    // Check if the barcode SN already exists in the preview list
+  
     const isBarcodeInPreview = itemList.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
     if (isBarcodeInPreview) {
       setError(prev => ({ ...prev, barcodeSN: 'This Barcode SN is already added.' }));
       hasError = true;
     }
-
+  
     if (hasError) return;
-
-    setLoadingAddingItem(true);  // Start loading
-
+  
+    setLoadingAddingItem(true);
+  
     try {
-      // Fetch scanned items to check for duplicates by invoiceNumber
-      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase()); // Search by invoiceNumber (case-insensitive)
-      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase()); // Search by barcodeSN (case-insensitive)
-
+      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase());
+      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase());
+  
       const isInvoiceDuplicate = existingInvoiceItems.some(item => item.invoice_number.toLowerCase() === invoiceNumber.toLowerCase());
       const isBarcodeDuplicate = existingBarcodeItems.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
-
+  
       if (isInvoiceDuplicate) {
         setError(prev => ({ ...prev, invoiceNumber: 'Invoice number already exists.' }));
-        setLoadingAddingItem(false);  // Stop loading
+        setLoadingAddingItem(false);
         return;
       }
-
+  
       if (isBarcodeDuplicate) {
         setError(prev => ({ ...prev, barcodeSN: 'Barcode SN already exists.' }));
-        setLoadingAddingItem(false);  // Stop loading
+        setLoadingAddingItem(false);
         return;
       }
-
-      // Proceed to add item to the list if no duplicates
+  
       const newItem = {
-        id: selectedItemId, // Added item ID for submission
+        id: selectedItemId,
         invoiceNumber: invoiceNumber,
         sku: selectedItem.split(' | ')[0],
         namaBarang: selectedItem.split(' | ')[1],
         barcode_sn: barcodeSN,
         qty: 1,
       };
-
-      setItemList((prevList) => [...prevList, newItem]);
-
-      // Clear inputs after adding to preview
+  
+      setItemList(prevList => [...prevList, newItem]);
       setBarcodeSN('');
-      setLoadingAddingItem(false);  // Stop loading
+      setLoadingAddingItem(false);
     } catch (error) {
       console.error('Error checking duplicates:', error);
-      setLoadingAddingItem(false);  // Stop loading on error
+      setLoadingAddingItem(false);
     }
   };
 
@@ -350,7 +351,7 @@ const AddScanned = () => {
 
             <button
               type="button"
-              className="bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 w-full"
+              className={` py-2 rounded-md w-full ${loadingAddingItem ? 'bg-gray-300 text-white animate-pulse' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
               onClick={handleAddItem}
               disabled={loadingAddingItem}
             >
