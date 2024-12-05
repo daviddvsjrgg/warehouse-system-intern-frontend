@@ -188,9 +188,9 @@ const TableUser: React.FC = () => {
       </button>
 
       {/* Table to display user data */}
-      <table className="min-w-full table-auto border-collapse border border-gray-200">
+      <table className="min-w-full table-auto border-collapse border border-gray-200 dark:bg-gray-800">
         <thead>
-          <tr className="bg-gray-100">
+          <tr className="bg-gray-100 dark:bg-gray-800">
             <th className="px-4 py-2 text-left">No</th>
             <th className="px-4 py-2 text-left">Name</th>
             <th className="px-4 py-2 text-left">Email</th>
@@ -208,7 +208,7 @@ const TableUser: React.FC = () => {
             </tr>
           ) : (
             users.map((user, index) => (
-              <tr key={user.id} className="hover:bg-gray-100">
+              <tr key={user.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                 <td className="px-4 py-2">{(currentPage - 1) * perPage + index + 1}</td>
                 <td className="px-4 py-2">{user.name}</td>
                 <td className="px-4 py-2">{user.email}</td>
