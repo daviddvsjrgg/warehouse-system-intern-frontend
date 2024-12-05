@@ -25,6 +25,7 @@ const Sidebar = () => {
     </li>
   );
 
+  const hasUserManagement = user?.roles?.some((role) => role.name === 'user-management');
   const hasMasterItemRole = user?.roles?.some((role) => role.name === 'master-item');
   const hasOfficeRole = user?.roles?.some((role) => role.name === 'office');
 
@@ -35,6 +36,7 @@ const Sidebar = () => {
           Warehouse System
         </Link>
         <ul className="mt-6 space-y-4">
+          {hasUserManagement && renderNavItem('/user-management', 'User Management')}
           {hasMasterItemRole && renderNavItem('/master-item', 'Master Item')}
           {hasMasterItemRole && renderNavItem('/scanned-item', 'Scan SN')}
           {hasOfficeRole && renderNavItem('/report', 'Report')}

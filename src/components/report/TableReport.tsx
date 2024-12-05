@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem } from '@/api/scanned-item/scanned-item';
-import Image from 'next/image';
+// import Image from 'next/image';
 import { convertToJakartaTime } from '@/utils/dateUtils';
 import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingInterface';
 import useDebounce from '@/hooks/useDebounce';
@@ -416,7 +416,7 @@ const handleExportGrouping = async (): Promise<void> => {
                   <td>{item.sku}</td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="avatar">
+                      {/* <div className="avatar">
                         <div className="mask mask-squircle h-12 w-12">
                           <Image
                             src="https://img.daisyui.com/images/profile/demo/2@94.webp"
@@ -427,7 +427,7 @@ const handleExportGrouping = async (): Promise<void> => {
                             priority={true}
                           />
                         </div>
-                      </div>
+                      </div> */}
                       <div>
                         <div className="font-bold">{item.user.name}</div>
                         <div className="text-sm opacity-50">{item.user.email}</div>

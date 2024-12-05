@@ -4,11 +4,12 @@ import api from '@/services/axiosInstance';
 import { Role } from '@/utils/interface/userInterface';
 
 // Define a type for the roles
-type RoleName = 'master-item' | 'office'; // Add other roles here as needed
+type RoleName = 'master-item' | 'office' | 'user-management'; // Add other roles here as needed
 
 // Define role-based access control configuration
 const rolePermissions: Record<RoleName, string[]> = {
   'master-item': ['/', '/master-item', '/scanned-item'],
+  'user-management': ['/', '/user-management'],
   'office': ['/', '/report'],
   // Add additional roles and their allowed routes here
 };

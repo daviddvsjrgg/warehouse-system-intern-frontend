@@ -492,25 +492,25 @@ const AddScanned = () => {
                           <table className="min-w-full table">
                             <thead>
                               <tr className="text-left bg-gray-50 dark:bg-gray-700">
-                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                  Barcode SN
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300 w-16">
+                                  No
                                 </th>
                                 <th className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                  Quantity
+                                  Barcode SN
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {skuItems.map((item) => (
+                              {skuItems.map((item,index) => (
                                 <tr
                                   key={item.barcode_sn}
                                   className="bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
                                 >
                                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                    {item.barcode_sn}
+                                    {index + 1}
                                   </td>
                                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                                    {item.qty}
+                                    {item.barcode_sn}
                                   </td>
                                 </tr>
                               ))}
