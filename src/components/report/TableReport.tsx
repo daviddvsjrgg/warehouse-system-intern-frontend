@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem } from '@/api/scanned-item/scanned-item';
 // import Image from 'next/image';
@@ -27,6 +28,10 @@ const TableReport: React.FC = () => {
   const perPage = 5;
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false);
+  const [barcodeSn, setBarcodeSn] = useState('');
+  const [originalBarcodeSn, setOriginalBarcodeSn] = useState<string>(''); // Track original barcode value
+  const [namaBarang, setNamaBarang] = useState<string>('');
+
 
   const getScannedItems = useCallback(async () => {
     setLoading(true);
@@ -50,12 +55,16 @@ const TableReport: React.FC = () => {
     return <div>Error: {error}</div>;
   }
 
-  const handleEdit = (id: number, sku: string, qty: number) => {
+  const handleEdit = (id: number, sku: string, qty: number, barcode: string, nama_barang: string) => {
+    setNamaBarang(nama_barang);
     setEditSku(sku);
     setEditId(id);
     setQuantity(qty);
     setOriginalQuantity(qty); // Set original quantity for comparison
+    setBarcodeSn(barcode);
+    setOriginalBarcodeSn(barcode); // Set original barcode for comparison
     setSaveSuccess(null); // Reset success message
+    setValidationError(null);
   };
 
   const handleNextPage = () => {
@@ -64,36 +73,58 @@ const TableReport: React.FC = () => {
   };
 
   const handleSaveEditReport = async () => {
-    // Validate that quantity is at least 1 and a positive integer
-    if (editId === null || quantity === originalQuantity || quantity < 1 || !Number.isInteger(quantity)) {
-      setValidationError("Quantity should be a positive integer of at least 1.");
-      setSaveSuccess(false);
-      return;
+    // Validate inputs
+    if (
+        editId === null || 
+        (quantity === originalQuantity && barcodeSn === originalBarcodeSn) || 
+        quantity < 1 || 
+        !Number.isInteger(quantity)
+    ) {
+        setValidationError("Ensure all fields are correctly updated and valid.");
+        setSaveSuccess(false);
+        return;
     }
-  
+
     setIsSaving(true);
     setSaveSuccess(null);
-  
+
     try {
-      await updateScannedItem(editId, quantity);
-  
-      // Update the specific row in scannedItems
-      setScannedItems((prevItems) =>
-        prevItems.map((item) =>
-          item.id === editId ? { ...item, qty: quantity } : item
-        )
-      );
-  
-      setSaveSuccess(true); // Show success message
-      setOriginalQuantity(quantity); // Update original quantity
-      setValidationError("");
+        // Fetch existing items to check for duplicate barcode_sn
+        const existingItems = await fetchScannedItems(1, 5, barcodeSn); // Adjust the limit if necessary
+        const isBarcodeDuplicate = existingItems.some(
+            (item) => 
+                item.barcode_sn.toLowerCase() === barcodeSn.toLowerCase() && 
+                item.id !== editId // Ensure we don't compare with the current item
+        );
+
+        if (isBarcodeDuplicate) {
+            setValidationError("The barcode sn already in use");
+            setSaveSuccess(false);
+            setIsSaving(false); // Stop the saving process
+            return;
+        }
+
+        // Proceed with saving if no duplicates are found
+        await updateScannedItem(editId, quantity, barcodeSn);
+
+        // Update the specific item in the list
+        setScannedItems((prevItems) =>
+            prevItems.map((item) =>
+                item.id === editId ? { ...item, qty: quantity, barcode_sn: barcodeSn } : item
+            )
+        );
+
+        setSaveSuccess(true); // Show success message
+        setOriginalQuantity(quantity); // Update original values
+        setOriginalBarcodeSn(barcodeSn);
+        setValidationError('');
     } catch (error) {
-      console.error(error);
-      setSaveSuccess(false); // Show error message
+        console.error(error);
+        setSaveSuccess(false); // Show error message
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
-  };
+};
 
   const handleSubmitDelete = async () => {
     setIsDeleting(true);
@@ -273,46 +304,62 @@ const handleExportGrouping = async (): Promise<void> => {
       </dialog>
       {/* Drawer (Edit) */}
       <div className="drawer drawer-end z-10">
-        <input id="edit_report" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-side">
-          <label htmlFor="edit_report" aria-label="close sidebar" className="drawer-overlay"></label>
-          <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-            <h1 className="text-blue-700">Edit Report | {editSku}</h1>
+  <input id="edit_report" type="checkbox" className="drawer-toggle" />
+  <div className="drawer-side">
+    <label htmlFor="edit_report" aria-label="close sidebar" className="drawer-overlay"></label>
+    <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+      <h1 className="text-blue-700">Edit | {editSku}</h1>
+      <h1 className="text-gray-700">{namaBarang}</h1>
 
-            {/* Quantity Input */}
-            <div className="my-4">
-              <label htmlFor="quantity" className="text-sm font-medium mb-2 block">Quantity</label>
-              <input
-                type="number"
-                id="quantity"
-                placeholder="Enter quantity"
-                className="input input-bordered w-3/4"
-                value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value))}
-              />
-            </div>
+      {/* Quantity Input */}
+        {/* <div className="my-4">
+          <label htmlFor="quantity" className="text-sm font-medium mb-2 block">Quantity</label>
+          <input
+            type="number"
+            id="quantity"
+            placeholder="Enter quantity"
+            className="input input-bordered w-3/4"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value))}
+          />
+        </div> */}
 
-            <div className="">
-              <label htmlFor="edit_report" className="btn btn-ghost btn-sm">Cancel</label>
-              <button
-                className="btn btn-primary btn-sm mx-2"
-                onClick={handleSaveEditReport}
-                disabled={quantity === originalQuantity || isSaving} // Disable button if unchanged or saving
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-
-            {/* Success/Error Message */}
-            {saveSuccess !== null && (
-              <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
-                {saveSuccess ? 'Saved successfully!' : 'Failed to save changes'}
-              </div>
-            )}
-            {validationError && <div className="text-red-500">{validationError}</div>}
-          </div>
+        {/* Barcode SN Input */}
+        <div className="my-2">
+          <label htmlFor="barcode_sn" className="text-sm font-medium mb-2 block">Barcode SN</label>
+          <input
+            type="text"
+            id="barcode_sn"
+            placeholder="Enter Barcode Serial Number"
+            className="input input-bordered w-3/4"
+            value={barcodeSn}
+            onChange={(e) => setBarcodeSn(e.target.value)}
+          />
         </div>
+
+        {/* Actions */}
+        <div className="">
+          <label htmlFor="edit_report" className="btn btn-ghost btn-sm">Cancel</label>
+          <button
+            className="btn btn-primary btn-sm mx-2"
+            onClick={handleSaveEditReport}
+            disabled={(quantity === originalQuantity && barcodeSn === originalBarcodeSn) || isSaving} // Disable button if unchanged or saving
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+
+        {/* Success/Error Message */}
+        {saveSuccess !== null && (
+          <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
+            {saveSuccess ? 'Saved successfully!' : ''}
+          </div>
+        )}
+        {validationError && <div className="text-red-500">{validationError}</div>}
       </div>
+    </div>
+  </div>
+
 
       <div className="overflow-x-auto">
         {/* Filter Inputs */}
@@ -394,11 +441,10 @@ const handleExportGrouping = async (): Promise<void> => {
             <tr>
               <th>Date</th>
               <th>SKU</th>
-              <th>User</th>
-              <th>Invoice Number</th>
               <th>Nama Barang</th>
-              <th>Qty</th>
+              <th>Invoice Number</th>
               <th>Barcode SN</th>
+              <th>User</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -414,6 +460,9 @@ const handleExportGrouping = async (): Promise<void> => {
                 <tr key={item.id} className={`hover:bg-base-200 dark:hover:bg-gray-700"`}>
                   <td>{convertToJakartaTime(item.created_at)}</td>
                   <td>{item.sku}</td>
+                  <td>{item.master_item.nama_barang}</td>
+                  <td>{item.invoice_number}</td>
+                  <td>{item.barcode_sn}</td>
                   <td>
                     <div className="flex items-center gap-3">
                       {/* <div className="avatar">
@@ -434,12 +483,8 @@ const handleExportGrouping = async (): Promise<void> => {
                       </div>
                     </div>
                   </td>
-                  <td>{item.invoice_number}</td>
-                  <td>{item.master_item.nama_barang}</td>
-                  <td>{item.qty}</td>
-                  <td>{item.barcode_sn}</td>
                   <th>
-                    <label htmlFor="edit_report" className="btn btn-ghost btn-xs text-blue-500" onClick={() => handleEdit(item.id, item.sku, item.qty)}>
+                    <label htmlFor="edit_report" className="btn btn-ghost btn-xs text-blue-500" onClick={() => handleEdit(item.id, item.sku, item.qty, item.barcode_sn, item.master_item.nama_barang)}>
                       Edit
                     </label>
                     <button

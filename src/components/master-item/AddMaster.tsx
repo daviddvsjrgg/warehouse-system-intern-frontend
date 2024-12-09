@@ -36,7 +36,7 @@ const AddMaster: React.FC = () => {
     const newItem = {
       sku,
       nama_barang,
-      barcode_sn : Math.random().toString(36).substring(2, 7)
+      barcode_sn : `${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(20).substring(5, 6)}`
     };
 
     try {

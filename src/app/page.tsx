@@ -23,38 +23,13 @@ const Home = () => {
               <h1 className="text-2xl font-bold dark:text-gray-200">
                 Selamat Datang di Warehouse System
               </h1>
-              <p className="mt-2 divider -mb-1 dark:text-gray-400">
-                Intern Self Deployed | Description:
-              </p>
               <p className="mt-2 dark:text-gray-300">
-                Terakhir Deploy: <span className="font-medium">Kamis, 7 November 2024</span>
+                Terakhir Push: <span className="font-medium">Kamis, 9 Desember 2024</span>
               </p>
 
               {/* Links Section */}
-              <p className="mt-2 dark:text-gray-300">
-                Frontend:{" "}
-                <a
-                  className="text-blue-500 dark:text-blue-400 underline"
-                  href="https://anker.highking.cloud"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  anker.highking.cloud
-                </a>
-              </p>
               <p className="dark:text-gray-300">
-                Backend:{" "}
-                <a
-                  className="text-blue-500 dark:text-blue-400 underline"
-                  href="https://api-backend-ws-david-intern.vercel.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  api-backend-ws-david-intern.vercel.app
-                </a>
-              </p>
-              <p className="dark:text-gray-300">
-                API Doc:{" "}
+                API Dokumentasi:{" "}
                 <a
                   className="text-blue-500 dark:text-blue-400 underline"
                   href="https://documenter.getpostman.com/view/10569515/2sAY4xA2Ec"

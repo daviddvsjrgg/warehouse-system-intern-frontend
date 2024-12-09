@@ -237,11 +237,11 @@ const TableUser: React.FC = () => {
       </table>
 
       {/* Pagination controls */}
-      <div className="flex justify-between mt-4">
+      <div className="flex justify-end mt-4">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50"
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md disabled:opacity-50 mx-2"
         >
           Previous
         </button>

@@ -159,7 +159,7 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
 };
 
 // Function to update an existing item (UPDATE)
-export const updateScannedItem = async (id: number, qty: number): Promise<ScannedItem> => {
+export const updateScannedItem = async (id: number, qty: number, barcode_sn: string): Promise<ScannedItem> => {
   const cookies = parseCookies();
   const token = cookies.token;
 
@@ -169,7 +169,7 @@ export const updateScannedItem = async (id: number, qty: number): Promise<Scanne
 
   const response = await api.put<ScannedItem>(
     `${process.env.NEXT_PUBLIC_SCAN_SN_API}/${id}`,
-    { qty, _method: 'PUT' }, // Method override for backward compatibility
+    { qty, barcode_sn, _method: 'PUT' }, // Method override for backward compatibility
     {
       headers: {
         Authorization: `Bearer ${token}`,
