@@ -31,12 +31,13 @@ const AddMaster: React.FC = () => {
       setIsSubmitting(false); // Re-enable the button if validation fails
       return; // Stop the function if fields are empty
     }
+    const barcode_sn = `${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}`;
 
     // Prepare the new item to be added
     const newItem = {
       sku,
       nama_barang,
-      barcode_sn : `${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(20).substring(5, 6)}`
+      barcode_sn : `${barcode_sn}`
     };
 
     try {
@@ -94,12 +95,27 @@ const AddMaster: React.FC = () => {
       const worksheet = workbook.Sheets[sheetName]; // Get the first sheet
       const jsonData: ExcelItem[] = XLSX.utils.sheet_to_json<ExcelItem>(worksheet); // Convert sheet to JSON with types
   
-      // Ensure the Excel file has the expected columns
-      const itemsToAdd = jsonData.map(item => ({
-        sku: item?.SKU ?? 'Unknown SKU', // Optional chaining and fallback
-        nama_barang: item?.['Nama Barang'] ?? 'Unknown Name', // Optional chaining and fallback
-        barcode_sn: Math.random().toString(36).substring(2, 7), // Generate random barcodes
-      }));
+      // Ensure the Excel file has the expected columns and check for empty values
+      const itemsToAdd = jsonData.map(item => {
+        const sku = String(item?.SKU ?? '').trim(); // Ensure SKU is a string and trim any spaces
+        const namaBarang = String(item?.['Nama Barang'] ?? '').trim(); // Ensure Nama Barang is a string and trim spaces
+  
+        if (!sku || !namaBarang) {
+          // You can customize this behavior if you want to add a specific error or fallback
+          return null; // Skip adding this item if SKU or Nama Barang is empty
+        }
+  
+        return {
+          sku: sku || 'Unknown SKU', // Fallback if empty
+          nama_barang: namaBarang || 'Unknown Name', // Fallback if empty
+          barcode_sn: `${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}`, // Generate random barcodes
+        };
+      }).filter(item => item !== null); // Remove any null entries where SKU or Nama Barang was empty
+  
+      if (itemsToAdd.length === 0) {
+        setError('No valid items to import. Please check the file for empty SKU or Nama Barang values.');
+        return;
+      }
   
       await addMasterItems(itemsToAdd); // Add items to the master list
   
@@ -112,7 +128,7 @@ const AddMaster: React.FC = () => {
       setIsImporting(false); // Re-enable the button after import attempt
       setFile(null); // Reset the file state after import
     }
-  };
+  };  
   
 
   return (

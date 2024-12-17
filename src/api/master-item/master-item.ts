@@ -86,19 +86,47 @@ export const addMasterItems = async (items: { sku: string; nama_barang: string; 
     throw new Error('No token found');
   }
 
-  const response = await api.post<Item[]>(
-    `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}`,
-    { items }, // Wrap items in an object to match the API expected format
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  // Check for duplicate SKUs within the provided items
+  const skuSet = new Set<string>();
+  for (const item of items) {
+    if (skuSet.has(item.sku)) {
+      throw new Error(`Duplicate SKU found: ${item.sku}`);
     }
-  );
+    skuSet.add(item.sku);
+  }
 
-  return response.data; // Returns an array of inserted items
+  try {
+    const response = await api.post<Item[]>(
+      `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}`,
+      { items }, // Wrap items in an object to match the API expected format
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data; // Returns an array of inserted items
+  } catch (error: any) {
+    console.error('Error adding master items:', error);
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+      throw new Error(`Failed to add master items: ${error.response.data?.message || 'Unknown error'}`);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Request data:', error.request);
+      throw new Error('Failed to add master items: No response from server');
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error message:', error.message);
+      throw new Error(`Failed to add master items: ${error.message}`);
+    }
+  }
 };
-
 // Function to update an existing item (UPDATE)
 export const updateMasterItem = async (id: number, sku: string, nama_barang: string, barcode_sn: string): Promise<Item> => {
   const cookies = parseCookies();
