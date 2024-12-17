@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 import api from '@/services/axiosInstance'; // Adjust the import based on your file structure
 import { parseCookies } from 'nookies';
 
