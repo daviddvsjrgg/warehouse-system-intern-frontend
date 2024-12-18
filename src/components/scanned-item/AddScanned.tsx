@@ -30,6 +30,7 @@ const AddScanned = () => {
     barcodeSN: '',
     submitError: ''
   });
+  const [autoInputEnabled, setAutoInputEnabled] = useState(false); // Checkbox state
   const [itemList, setItemList] = useState<Array<any>>([]); // Holds multiple items for preview
 
   const per_page = 10;
@@ -70,7 +71,7 @@ const AddScanned = () => {
 
   useEffect(() => {
     // Skip if barcodeSN is empty or if the error related to barcodeSN is set
-    if (debouncedBarcodeSN.trim() === '') return;
+    if (!autoInputEnabled || debouncedBarcodeSN.trim() === '') return;
   
     // If barcodeSN is valid, automatically add the item
     if (debouncedBarcodeSN) {
@@ -269,6 +270,13 @@ const AddScanned = () => {
     setItemList([]); // Clear all items from itemList
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddItem();
+    }
+  };
+
+
   return (
     <div>
       <div className="grid grid-cols-2 gap-4">
@@ -282,6 +290,7 @@ const AddScanned = () => {
                 placeholder="Enter Invoice Number"
                 className="input input-bordered w-full dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 value={invoiceNumber}
+                onKeyDown={handleKeyDown} // Handle Enter key press
                 onChange={(e) => setInvoiceNumber(e.target.value)}
               />
               {error.invoiceNumber && <div className="text-red-600 text-sm mt-1">{error.invoiceNumber}</div>}
@@ -353,15 +362,37 @@ const AddScanned = () => {
 
 
             <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Barcode SN</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
+                Barcode SN
+              </label>
               <input
                 type="text"
                 placeholder="Enter Barcode SN"
                 className="input input-bordered w-full dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 value={barcodeSN}
+                onKeyDown={handleKeyDown} // Handle Enter key press
                 onChange={(e) => setBarcodeSN(e.target.value)}
               />
-              {error.barcodeSN && <div className="text-red-600 text-sm mt-1">{error.barcodeSN}</div>}
+              {error.barcodeSN && (
+                <div className="text-red-600 text-sm mt-1">{error.barcodeSN}</div>
+              )}
+
+              {/* Checkbox for enabling/disabling auto-input */}
+              <div className="flex items-center mt-2">
+                <input
+                  type="checkbox"
+                  id="autoInputCheckbox"
+                  className="checkbox mr-2"
+                  checked={autoInputEnabled}
+                  onChange={(e) => setAutoInputEnabled(e.target.checked)}
+                />
+                <label
+                  htmlFor="autoInputCheckbox"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Enable Auto Input
+                </label>
+              </div>
             </div>
 
             <button
