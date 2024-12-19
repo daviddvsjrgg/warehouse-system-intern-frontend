@@ -2,7 +2,7 @@ import React from 'react'
 
 const TipsReport = () => {
   return (
-    <div role="alert" className="alert alert-info">
+    <div role="alert" className="alert alert-info shadow-md">
         <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -14,7 +14,7 @@ const TipsReport = () => {
             strokeWidth="2"
             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        <span>Atur tanggal untuk mengekspor laporan Excel sesuai dengan tanggal yang dipilih, atau biarkan kosong untuk mengekspor seluruh laporan.</span>
+        <span>Atur tanggal/pencarian untuk mengekspor laporan Excel sesuai dengan tanggal/pencarian yang dipilih, atau biarkan kosong untuk mengekspor seluruh laporan.</span>
     </div>
   )
 }
