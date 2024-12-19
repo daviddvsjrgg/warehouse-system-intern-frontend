@@ -4,6 +4,7 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import TableReport from '@/components/report/TableReport';
+import TipsReport from '@/components/report/TipsReport';
 
 const Page = () => {
   return (
@@ -18,6 +19,12 @@ const Page = () => {
 
         {/* Page content */}
         <main className="p-6 flex-1">
+          <div className="card shadow-xl bg-white dark:bg-gray-800 mb-2">
+            <div className="card-body text-gray-900 dark:text-gray-100 overflow-x-auto">
+              <h2 className="card-title">Tips</h2>
+              <TipsReport />
+            </div>
+          </div>
           <div className="card shadow-xl bg-white dark:bg-gray-800">
             <div className="card-body text-gray-900 dark:text-gray-100 overflow-x-auto">
               <h2 className="card-title">Report Item Barang</h2>

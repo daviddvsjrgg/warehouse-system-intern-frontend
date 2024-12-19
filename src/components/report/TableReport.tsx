@@ -1,6 +1,6 @@
 /* eslint-disable */ 
 import React, { useEffect, useState, useCallback } from 'react';
-import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem } from '@/api/scanned-item/scanned-item';
+import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem, getTotalItemScannedItems } from '@/api/scanned-item/scanned-item';
 // import Image from 'next/image';
 import { convertToJakartaTime } from '@/utils/dateUtils';
 import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingInterface';
@@ -31,12 +31,15 @@ const TableReport: React.FC = () => {
   const [barcodeSn, setBarcodeSn] = useState('');
   const [originalBarcodeSn, setOriginalBarcodeSn] = useState<string>(''); // Track original barcode value
   const [namaBarang, setNamaBarang] = useState<string>('');
+  const [totalItem, setTotalItem] = useState<number>(0);
 
 
   const getScannedItems = useCallback(async () => {
     setLoading(true);
     try {
       const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
+      const totalData = await getTotalItemScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
+      setTotalItem(totalData.total);
       setScannedItems(items);
       setNextButtonClicked(false); // Reset next button state after fetching
     } catch (error) {
@@ -509,7 +512,11 @@ const handleExportGrouping = async (): Promise<void> => {
 
         {/* Pagination Controls */}
         <div className='flex justify-between'>
-          <span className='mt-3'>Page {currentPage}</span>
+          <div className='flex'>
+            <span className='mt-3 text-gray-500'>Total barang di scan:</span>
+            <span className={`mt-3 ml-1`}>{totalItem ? totalItem :''}</span>
+          </div>
+          <span className='mt-3 badge badge-neutral badge-lg'>Page {currentPage}</span>
           <div className="mt-4">
             <button 
               className="btn" 

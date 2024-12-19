@@ -115,6 +115,59 @@ export const fetchScannedItems = async (
   }
 };
 
+export const getTotalItemScannedItems = async (
+  page: number = 1,
+  perPage: number = 5,
+  exactSearch: string = '',
+  startDate?: string,
+  endDate?: string
+) => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  try {
+    // Build the query string based on the provided parameters
+    const queryParams: string[] = [];
+    
+    queryParams.push(`per_page=${perPage}`); // Add pagination
+    queryParams.push(`page=${page}`); // Add page number
+
+    if (exactSearch) {
+      queryParams.push(`exact=${encodeURIComponent(exactSearch)}`); // SKU search
+    }
+    if (startDate) {
+      queryParams.push(`start_date=${encodeURIComponent(startDate)}`); // Start date filter
+    }
+    if (endDate) {
+      queryParams.push(`end_date=${encodeURIComponent(endDate)}`); // End date filter
+    }
+
+    const response = await api.get<ApiResponse>(
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.join('&')}`, // Querying with parameters
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Authorization header
+        },
+      }
+    );
+
+    // Check if response was successful
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch scanned items');
+    }
+
+    // Return the scanned items data from the API response
+    return response.data.data; // Accessing the data array inside the response
+  } catch (error) {
+    const errorMessage = (error as Error).message || "Unknown Error";
+    throw new Error(errorMessage);
+  }
+};
+
 // Function to submit scanned items
 export const addScannedItems = async (items: { id: number; sku: string; invoiceNumber: string; qty: number; barcode_sn: string; }[]): Promise<ScannedItem[]> => {
   const cookies = parseCookies();
