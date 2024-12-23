@@ -150,14 +150,14 @@ const AddScanned = () => {
       const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase()); // Search by invoiceNumber (case-insensitive)
       const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase()); // Search by barcodeSN (case-insensitive)
   
-      // const isInvoiceDuplicate = existingInvoiceItems.some(item => item.invoice_number.toLowerCase() === invoiceNumber.toLowerCase());
+      const isInvoiceDuplicate = existingInvoiceItems.some(item => item.invoice_number.toLowerCase() === invoiceNumber.toLowerCase());
       const isBarcodeDuplicate = existingBarcodeItems.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
   
-      // if (isInvoiceDuplicate) {
-      //   setError(prev => ({ ...prev, invoiceNumber: 'Invoice number already exists.' }));
-      //   setLoadingAddingItem(false);  // Stop loading
-      //   return;
-      // }
+      if (isInvoiceDuplicate) {
+        setError(prev => ({ ...prev, invoiceNumber: 'Invoice ini sudah pernah ditambahkan.' }));
+        setLoadingAddingItem(false);  // Stop loading
+        return;
+      }
   
       if (isBarcodeDuplicate) {
         setError(prev => ({ ...prev, barcodeSN: 'This Barcode SN is already added.' }));
@@ -201,9 +201,9 @@ const AddScanned = () => {
       for (const item of itemList) {
         // Check for duplicates by invoiceNumber
         const existingInvoiceItems = await fetchScannedItems(1, 5, item.invoiceNumber.toLowerCase());
-        // const isInvoiceDuplicate = existingInvoiceItems.some(existingItem => 
-        //   existingItem.invoice_number.toLowerCase() === item.invoiceNumber.toLowerCase()
-        // );
+        const isInvoiceDuplicate = existingInvoiceItems.some(existingItem => 
+          existingItem.invoice_number.toLowerCase() === item.invoiceNumber.toLowerCase()
+        );
   
         // Check for duplicates by barcodeSN
         const existingBarcodeItems = await fetchScannedItems(1, 5, item.barcode_sn.toLowerCase());
@@ -212,9 +212,9 @@ const AddScanned = () => {
         );
   
         // If there is a duplicate invoiceNumber
-        // if (isInvoiceDuplicate) {
-        //   invoiceDuplicateMessage = 'One or more scanned items have a duplicate invoice number.';
-        // }
+        if (isInvoiceDuplicate) {
+          invoiceDuplicateMessage = 'One or more scanned items have a duplicate invoice number.';
+        }
   
         // If there is a duplicate barcodeSN
         if (isBarcodeDuplicate) {
