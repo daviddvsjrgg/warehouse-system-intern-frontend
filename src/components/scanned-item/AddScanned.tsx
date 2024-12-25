@@ -24,6 +24,10 @@ const AddScanned = () => {
   const [loadingAddingItem, setLoadingAddingItem] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [barcodeSN, setBarcodeSN] = useState('');
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [selectedBarcode, setSelectedBarcode] = useState(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     const [error, setError] = useState({
       invoiceNumber: '',
       selectedItem: '',
@@ -261,12 +265,25 @@ const AddScanned = () => {
       console.log('Items added successfully:', response);
   
       // Clear inputs after successful submission
+      setSuccessMessage('Barang berhasil discan!');
       setInvoiceNumber('');
       setItemList([]);
       setSelectedItem('Cari Barang');
       setSelectedItemId(null);
       setBarcodeSN('');
       setLoading(false);
+      setError({
+        invoiceNumber: '',
+        selectedItem: '',
+        barcodeSN: '',
+        submitError: '',
+        submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
+        submitBarcodeSNs: [] as string[],
+      });
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
   
     } catch (error) {
       console.error('Error submitting items:', error);
@@ -287,6 +304,7 @@ const AddScanned = () => {
   // Function to clear all items
   const handleClearAll = () => {
     setItemList([]); // Clear all items from itemList
+    setShowClearAllModal(false); // Close modal
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -295,9 +313,65 @@ const AddScanned = () => {
     }
   };
 
+  const [showModal, setShowModal] = useState(false);
+
+  const handleDeleteItemPreview = () => {
+    setItemList((prevList) => prevList.filter((item) => item.barcode_sn !== selectedBarcode));
+    setShowModal(false); // Close the modal after deletion
+  };
+
+  const showModalDeleteItemPreview = (barcodeSn: any) => {
+    setSelectedBarcode(barcodeSn);
+    setShowModal(true);
+  };
 
   return (
     <div>
+      {/* Success Submit */}
+      {successMessage && (
+        <div
+          role="alert"
+          className="fixed flex mr-2 bottom-5 right-5 bg-green-500 text-white p-4 rounded-lg shadow-lg animate-bounce transition-all duration-500 z-50"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 shrink-0 stroke-current"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span className='ml-2'>{successMessage}</span>
+        </div>
+      )}
+      {/* Daisy UI Modal */}
+      {showClearAllModal && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h2 className="font-bold text-lg">Hapus semua barang yang telah discan?</h2>
+            <p className="py-4">Do you really want to clear all items?</p>
+            <div className="modal-action">
+              <button
+                className="btn btn-warning"
+                onClick={handleClearAll} // Confirm action
+              >
+                Yes
+              </button>
+              <button
+                className="btn"
+                onClick={() => setShowClearAllModal(false)} // Cancel action
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-1">
           {/* Scan SN */}  
@@ -475,7 +549,7 @@ const AddScanned = () => {
                 <button
                   type="button"
                   className="btn btn-sm bg-gray-500 text-white"
-                  onClick={handleClearAll}
+                  onClick={() => setShowClearAllModal(true)} // Show modal
                 >
                   Clear All
                 </button>
@@ -483,6 +557,29 @@ const AddScanned = () => {
             </div>
 
             {/* Group items by invoiceNumber */}
+            {showModal && (
+              <div className="modal modal-open">
+                <div className="modal-box">
+                  <h3 className="font-bold text-lg">Confirm Deletion</h3>
+                  <p className="py-4">Are you sure you want to delete this item? | {selectedBarcode}</p>
+                  <div className="modal-action">
+                    <button
+                      className="btn btn-error text-white"
+                      onClick={handleDeleteItemPreview}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {Object.entries(
               itemList.reduce<{ [key: string]: PreviewItem[] }>((acc, item) => {
                 if (!acc[item.invoiceNumber]) {
@@ -548,10 +645,13 @@ const AddScanned = () => {
                                 <th className="px-4 py-2 text-gray-700 dark:text-gray-300">
                                   Barcode SN
                                 </th>
+                                <th className="px-4 py-2 text-gray-700 dark:text-gray-300 w-20">
+                                  Action/s
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {skuItems.map((item,index) => (
+                              {skuItems.map((item, index) => (
                                 <tr
                                   key={item.barcode_sn}
                                   className="bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
@@ -561,6 +661,29 @@ const AddScanned = () => {
                                   </td>
                                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
                                     {item.barcode_sn}
+                                  </td>
+                                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                                    <button
+                                      onClick={() => showModalDeleteItemPreview(item.barcode_sn)}
+                                      className="flex items-center justify-center text-red-500 hover:text-red-700 tooltip"
+                                      data-tip="Hapus Scan Ini?"
+                                      aria-label="Delete"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                        stroke="currentColor"
+                                        className="w-5 h-5"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                        />
+                                      </svg>
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
