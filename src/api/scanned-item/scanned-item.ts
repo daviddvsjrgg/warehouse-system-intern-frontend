@@ -115,6 +115,51 @@ export const fetchScannedItems = async (
   }
 };
 
+export const fetchScannedItemsBatch = async (
+  invoiceNumbers: string[],
+  barcodeSNs: string[],
+  startDate?: string,
+  endDate?: string
+): Promise<FetchScannedItem[]> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  try {
+    // Prepare query parameters
+    const queryParams = new URLSearchParams();
+    invoiceNumbers.forEach(invoiceNumber =>
+      queryParams.append('invoice_numbers[]', invoiceNumber)
+    );
+    barcodeSNs.forEach(barcodeSN =>
+      queryParams.append('barcode_sns[]', barcodeSN)
+    );
+    if (startDate) queryParams.append('start_date', startDate);
+    if (endDate) queryParams.append('end_date', endDate);
+
+    const response = await api.get<ApiResponse>(
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.toString()}&per_page=10000000`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch scanned items');
+    }
+
+    return response.data.data.data;
+  } catch (error) {
+    throw new Error((error as Error).message || "Unknown Error");
+  }
+};
+
+
 export const getTotalItemScannedItems = async (
   page: number = 1,
   perPage: number = 5,

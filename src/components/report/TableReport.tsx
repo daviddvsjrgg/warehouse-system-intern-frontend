@@ -324,12 +324,6 @@ const handleExportGrouping = async (): Promise<void> => {
   
   return (
     <>
-    {loading ? (
-      <>
-       <LoadingTableReport />
-      </>
-    ) : (
-      <>
       {/* Modal Delete */}
       <dialog id="delete_modal" className="modal">
           <div className="modal-box">
@@ -621,9 +615,4 @@ const handleExportGrouping = async (): Promise<void> => {
         </div>
       </>
     )}
-     
-    </>
-  );
-};
-
 export default TableReport;

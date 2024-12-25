@@ -1,7 +1,7 @@
 /* eslint-disable */ 
 import React, { useState, useEffect } from 'react';
 import { fetchMasterItems, Item } from '@/api/master-item/master-item';
-import { addScannedItems, fetchScannedItems } from '@/api/scanned-item/scanned-item';
+import { addScannedItems, fetchScannedItems, fetchScannedItemsBatch } from '@/api/scanned-item/scanned-item';
 import useDebounce from '@/hooks/useDebounce';
 
 interface PreviewItem {
@@ -24,12 +24,15 @@ const AddScanned = () => {
   const [loadingAddingItem, setLoadingAddingItem] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [barcodeSN, setBarcodeSN] = useState('');
-  const [error, setError] = useState({
-    invoiceNumber: '',
-    selectedItem: '',
-    barcodeSN: '',
-    submitError: ''
-  });
+    const [error, setError] = useState({
+      invoiceNumber: '',
+      selectedItem: '',
+      barcodeSN: '',
+      submitError: '',
+      submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
+      submitBarcodeSNs: [] as string[],
+    });
+
   const [autoInputEnabled, setAutoInputEnabled] = useState(false); // Checkbox state
   const [itemList, setItemList] = useState<Array<any>>([]); // Holds multiple items for preview
 
@@ -113,7 +116,9 @@ const AddScanned = () => {
       invoiceNumber: '',
       selectedItem: '',
       barcodeSN: '',
-      submitError: ''
+      submitError: '',
+      submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
+      submitBarcodeSNs: [] as string[],
     });
   
     // Check if invoice number is empty
@@ -189,55 +194,69 @@ const AddScanned = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
   
-    if (itemList.length === 0) return; // If no items in list, do not submit
+    if (itemList.length === 0) return;
   
-    setLoading(true); // Set loading state for submission
+    setLoading(true);
   
     try {
-      let invoiceDuplicateMessage = '';
-      let barcodeDuplicateMessage = '';
+      // Extract invoice numbers and barcode SNs from the itemList
+      const invoiceNumbers = itemList.map(item => item.invoiceNumber.toLowerCase());
+      const barcodeSNs = itemList.map(item => item.barcode_sn.toLowerCase());
   
-      // Loop through each item to check for duplicates by invoiceNumber or barcodeSN
-      for (const item of itemList) {
-        // Check for duplicates by invoiceNumber
-        const existingInvoiceItems = await fetchScannedItems(1, 5, item.invoiceNumber.toLowerCase());
-        const isInvoiceDuplicate = existingInvoiceItems.some(existingItem => 
-          existingItem.invoice_number.toLowerCase() === item.invoiceNumber.toLowerCase()
-        );
+      // Fetch existing items matching these invoice numbers or barcode SNs
+      const existingItems = await fetchScannedItemsBatch(invoiceNumbers, barcodeSNs);
   
-        // Check for duplicates by barcodeSN
-        const existingBarcodeItems = await fetchScannedItems(1, 5, item.barcode_sn.toLowerCase());
-        const isBarcodeDuplicate = existingBarcodeItems.some(existingItem => 
-          existingItem.barcode_sn.toLowerCase() === item.barcode_sn.toLowerCase()
-        );
+      // Initialize sets to track duplicates
+      const duplicateInvoices = new Set<string>();
+      const duplicateBarcodes = new Set<string>();
   
-        // If there is a duplicate invoiceNumber
-        if (isInvoiceDuplicate) {
-          invoiceDuplicateMessage = 'One or more scanned items have a duplicate invoice number.';
+      // Check for duplicates in the fetched data
+      for (let i = 0; i < itemList.length; i++) {
+        const item = itemList[i];
+        const lowerInvoice = item.invoiceNumber.toLowerCase();
+        const lowerBarcode = item.barcode_sn.toLowerCase();
+  
+        // Check for duplicate invoice numbers
+        if (existingItems.some(existing => existing.invoice_number.toLowerCase() === lowerInvoice)) {
+          duplicateInvoices.add(item.invoiceNumber);
         }
   
-        // If there is a duplicate barcodeSN
-        if (isBarcodeDuplicate) {
-          barcodeDuplicateMessage = 'One or more scanned items have a duplicate barcode SN.';
-        }
-  
-        // If both duplicates are found, break out of the loop
-        if (invoiceDuplicateMessage || barcodeDuplicateMessage) {
-          break;
+        // Check for duplicate barcode SNs
+        if (existingItems.some(existing => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
+          duplicateBarcodes.add(item.barcode_sn);
         }
       }
   
-      // If duplicates are found, update the submitError state
-      if (invoiceDuplicateMessage || barcodeDuplicateMessage) {
+      // Format error messages for duplicates
+      let errorMessage = '';
+  
+      // Format duplicate invoices section
+      if (duplicateInvoices.size > 0) {
+        errorMessage += 'Duplicate Invoice Numbers:<br>';
+        Array.from(duplicateInvoices).forEach((invoice, index) => {
+          errorMessage += `${index + 1}. Invoice "${invoice}"<br>`;
+        });
+      }
+  
+      // Format duplicate barcode SNs section
+      if (duplicateBarcodes.size > 0) {
+        errorMessage += '<br>Duplicate Barcode SNs:<br>';
+        Array.from(duplicateBarcodes).forEach((barcode, index) => {
+          errorMessage += `${index + 1}. Barcode "${barcode}"<br>`;
+        });
+      }
+  
+      // If any duplicates are found, set the error message and stop the process
+      if (errorMessage) {
         setError(prev => ({
           ...prev,
-          submitError: `${invoiceDuplicateMessage} ${barcodeDuplicateMessage}`.trim(),
+          submitError: errorMessage.trim(),
         }));
-        setLoading(false); // Stop loading state
-        return; // Exit the function, no need to submit
+        setLoading(false);
+        return;
       }
   
-      // Proceed with the submission if no duplicates
+      // Proceed with submission if no errors
       const response = await addScannedItems(itemList);
       console.log('Items added successfully:', response);
   
@@ -247,13 +266,13 @@ const AddScanned = () => {
       setSelectedItem('Cari Barang');
       setSelectedItemId(null);
       setBarcodeSN('');
-      setLoading(false); // Stop loading after submission
+      setLoading(false);
   
     } catch (error) {
       console.error('Error submitting items:', error);
-      setLoading(false); // Stop loading in case of error
+      setLoading(false);
     }
-  };
+  };  
 
   const filteredItems = items.filter(item =>
     item.nama_barang.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -564,10 +583,8 @@ const AddScanned = () => {
             <button type="submit" onClick={handleSubmit} className={`btn btn-primary w-1/2 ${loading ? 'animate-pulse' : ''}`} disabled={loading}>
               {loading ? 'Submitting..' : 'Submit'}
             </button>
-        
-            {/* Display error below the submit button if there is a submission error */}
             {error.submitError && (
-              <div className="mt-3 text-red-600 text-sm">{error.submitError}</div>
+              <div className="mt-3 text-red-600 text-sm" dangerouslySetInnerHTML={{ __html: error.submitError }} />
             )}
           </div>
         )}  
