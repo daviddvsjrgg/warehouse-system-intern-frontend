@@ -188,7 +188,7 @@ const TableUser: React.FC = () => {
       </button>
 
       {/* Table to display user data */}
-      <table className="min-w-full table-auto border-collapse border border-gray-200 dark:bg-gray-800">
+      <table className="min-w-full table-auto border-collapse dark:bg-gray-800">
         <thead>
           <tr className="bg-gray-100 dark:bg-gray-800">
             <th className="px-4 py-2 text-left">No</th>
@@ -323,7 +323,8 @@ const TableUser: React.FC = () => {
         {/* Add User Modal */}
         <dialog id="add_user_modal" className="modal">
         <div className="modal-box">
-          <h3 className="font-bold text-lg">Add User</h3>
+          <h3 className="font-bold text-lg">Tambah User dan Role</h3>
+          <div className='divider -mb-4'></div>
           <div className="py-4">
             {/* Name Input */}
             <div className="form-control mb-4">

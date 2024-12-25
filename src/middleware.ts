@@ -9,7 +9,7 @@ type RoleName = 'master-item' | 'office' | 'user-management'; // Add other roles
 // Define role-based access control configuration
 const rolePermissions: Record<RoleName, string[]> = {
   'master-item': ['/', '/master-item', '/scanned-item'],
-  'user-management': ['/', '/user-management'],
+  'user-management': ['/', '/user-management', '/roles', '/permissions'],
   'office': ['/', '/report'],
   // Add additional roles and their allowed routes here
 };
