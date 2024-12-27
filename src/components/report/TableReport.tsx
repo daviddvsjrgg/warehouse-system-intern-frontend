@@ -30,7 +30,7 @@ const TableReport: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null); // Track save success
   const [validationError, setValidationError] = useState<string | null>(null);
   const debouncedSkuSearch = useDebounce(skuSearch, 300);
-  const perPageValueOptions = [5, 10, 25, 50, 100, 1000000000000]; // "All" represented as a very large number
+  const perPageValueOptions = [5, 10, 25, 50, 100]; // "All" represented as a very large number
   const [perPage, setPerPage] = useState<number>(5);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false);
