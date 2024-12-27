@@ -7,7 +7,6 @@ import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingIn
 import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx';
 import { fetchRolesPermissions } from '@/api/user-management/roles';
-import { LoadingTableReport } from '@/components/report/loading/TableReportLoad';
 import { FeatureDisabled } from '@/components/alerts/feature-disabled';
 
 const TableReport: React.FC = () => {
@@ -21,6 +20,9 @@ const TableReport: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteReportId, setDeleteReportId] = useState<number>(0);
   const [deleteSku, setDeleteSku] = useState<string | null>(null);
+  const [deleteBarcodeSN, setDeleteBarcodeSN] = useState<string | null>(null);
+  const [deleteNamaBarang, setDeleteNamaBarang] = useState<string | null>(null);
+  const [deleteInvoice, setDeleteInvoice] = useState<string | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [originalQuantity, setOriginalQuantity] = useState<number>(1); // Track original quantity
@@ -28,13 +30,15 @@ const TableReport: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null); // Track save success
   const [validationError, setValidationError] = useState<string | null>(null);
   const debouncedSkuSearch = useDebounce(skuSearch, 300);
-  const perPage = 5;
+  const perPageValueOptions = [5, 10, 25, 50, 100, 1000000000000]; // "All" represented as a very large number
+  const [perPage, setPerPage] = useState<number>(5);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false);
   const [barcodeSn, setBarcodeSn] = useState('');
   const [originalBarcodeSn, setOriginalBarcodeSn] = useState<string>(''); // Track original barcode value
   const [namaBarang, setNamaBarang] = useState<string>('');
   const [totalItem, setTotalItem] = useState<number>(0);
+  const [isOpen, setIsOpen] = useState(false);
 
   const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
   const [hasReadPermission, setHasReadPermission] = useState(false);
@@ -59,6 +63,17 @@ const TableReport: React.FC = () => {
       setLoading(false);
     }
   }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate]);
+
+  // Effect to handle search and change perPage value
+  useEffect(() => {
+    if (skuSearch.trim() !== '') {
+        setPerPage(1000000000000); // Set perPage to a large number when searching
+        setCurrentPage(1);
+      } else {
+        setPerPage(5); // Reset to the default perPage when search is cleared
+        setCurrentPage(1);
+    }
+  }, [skuSearch]);
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -321,14 +336,28 @@ const handleExportGrouping = async (): Promise<void> => {
       console.error('Error fetching or exporting items:', error);
   }
 };
+
+ const handleChange = (value: number) => {
+    setPerPage(value);
+    console.log(`Items per page: ${value}`);
+    // Add logic here to handle perPage change, such as fetching data
+  };
+
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
   
   return (
     <>
       {/* Modal Delete */}
       <dialog id="delete_modal" className="modal">
           <div className="modal-box">
-            <h3 className="font-bold text-lg">Yakin ingin menghapus data ini?</h3>
-            <p className="py-4">{deleteSku}</p>
+            <h3 className="font-bold text-lg">Yakin ingin menghapus data Scan ini?</h3>
+            <p className="mt-2">Invoice: {deleteInvoice}</p>
+            <p className="">Barcode SN: {deleteBarcodeSN}</p>
+            <p className="mt-3">SKU: {deleteSku}</p>
+            <p className="">Nama Barang: {deleteNamaBarang}</p>
             <div className="flex justify-end">
               {isDeleting ? (
                 <></>
@@ -420,7 +449,57 @@ const handleExportGrouping = async (): Promise<void> => {
             <>
             {/* Filter Inputs */}
               <div className='flex justify-between mr-2 mx-2'>
-                  <div className="gap-4 mb-4 mt-2">
+                  <div className="gap-4 mb-4 mt-2 flex">
+                    {/* Filter Per Page Value */}
+                    <div className="dropdown relative">
+                      <label
+                        tabIndex={0}
+                        className="btn bg-white flex items-center justify-between w-auto btn-sm border-gray-300"
+                        onClick={toggleDropdown}
+                      >
+                        <span>Per halaman: {perPage === 1000000000000 ? "Semua" : perPage} data</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className={`ml-2 w-5 h-5 transform transition-transform ${
+                            isOpen ? "rotate-180" : ""
+                          }`}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                          />
+                        </svg>
+                      </label>
+                      <ul
+                        tabIndex={0}
+                        className={`dropdown-content menu p-2 shadow bg-white border border-gray-300 rounded-box w-52 z-50 absolute mt-2 ${
+                          isOpen ? "block" : "hidden"
+                        }`}
+                      >
+                        {perPageValueOptions.map((option) => (
+                          <li key={option}>
+                            <a
+                              onClick={() => {
+                                handleChange(option);
+                                setIsOpen(false); // Close dropdown on selection
+                              }}
+                              className={`block px-4 py-2 rounded hover:bg-gray-100 ${
+                                perPage === option
+                                  ? "active text-primary font-bold bg-gray-100"
+                                  : ""
+                              }`}
+                            >
+                              {option === 1000000000000 ? "Semua" : option}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                     <div className='flex'>
                       <input
                         type="date"
@@ -429,7 +508,7 @@ const handleExportGrouping = async (): Promise<void> => {
                         className="input input-bordered input-sm"
                         placeholder="Start Date"
                       />
-                      <div className='mt-1 mx-3 text-sm'>To</div>
+                      <div className='mt-1 mx-3 text-sm'>Sampai</div>
                       <input
                         type="date"
                         value={endDate}
@@ -439,7 +518,7 @@ const handleExportGrouping = async (): Promise<void> => {
                       />
                     </div>
                   </div>
-                  <div className='flex'>  
+                  <div className='flex mt-1.5'>  
                   {hasExportPermission && (
                     <div className="dropdown mr-2">
                       {/* Button to trigger dropdown */}
@@ -573,7 +652,10 @@ const handleExportGrouping = async (): Promise<void> => {
                                 modal.showModal();
                               }
                               setDeleteReportId(item.id);
+                              setDeleteInvoice(item.invoice_number)
                               setDeleteSku(item.sku);
+                              setDeleteBarcodeSN(item.barcode_sn)
+                              setDeleteNamaBarang(item.master_item.nama_barang)
                             }}
                           >
                             Delete
@@ -591,7 +673,7 @@ const handleExportGrouping = async (): Promise<void> => {
                 <span className='mt-3 text-gray-500'>Total barang di scan:</span>
                 <span className={`mt-3 ml-1`}>{totalItem ? totalItem :''}</span>
               </div>
-              <span className='mt-3 badge badge-neutral badge-lg'>Page {currentPage}</span>
+              <span className='mt-3 badge badge-neutral badge-lg'>Halaman {currentPage}</span>
               <div className="mt-4">
                 <button 
                   className="btn" 
