@@ -30,7 +30,7 @@ const TableReport: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null); // Track save success
   const [validationError, setValidationError] = useState<string | null>(null);
   const debouncedSkuSearch = useDebounce(skuSearch, 300);
-  const perPageValueOptions = [5, 10, 25, 50, 100]; // "All" represented as a very large number
+  const perPageValueOptions = [5, 10, 25, 50, 100, 1000000000000]; // "All" represented as a very large number
   const [perPage, setPerPage] = useState<number>(5);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false);
@@ -67,10 +67,10 @@ const TableReport: React.FC = () => {
   // Effect to handle search and change perPage value
   useEffect(() => {
     if (skuSearch.trim() !== '') {
-        setPerPage(1000000000000); // Set perPage to a large number when searching
         setCurrentPage(1);
       } else {
-        setPerPage(5); // Reset to the default perPage when search is cleared
+        // Reset
+        setPerPage(5);
         setCurrentPage(1);
     }
   }, [skuSearch]);
@@ -485,10 +485,24 @@ const handleExportGrouping = async (): Promise<void> => {
                           <li key={option}>
                             <a
                               onClick={() => {
-                                handleChange(option);
-                                setIsOpen(false); // Close dropdown on selection
+                                // Allow "Semua" only if skuSearch has a value
+                                if (option === 1000000000000 && skuSearch) {
+                                  handleChange(option);
+                                  setIsOpen(false); // Close dropdown on selection
+                                }
+                                // Allow other options unconditionally
+                                if (option !== 1000000000000) {
+                                  handleChange(option);
+                                  setIsOpen(false); // Close dropdown on selection
+                                }
                               }}
-                              className={`block px-4 py-2 rounded hover:bg-gray-100 ${
+                              className={`block px-4 py-2 rounded ${
+                                option === 1000000000000
+                                  ? skuSearch
+                                    ? "hover:bg-gray-100 cursor-pointer"
+                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "hover:bg-gray-100 cursor-pointer"
+                              } ${
                                 perPage === option
                                   ? "active text-primary font-bold bg-gray-100"
                                   : ""
