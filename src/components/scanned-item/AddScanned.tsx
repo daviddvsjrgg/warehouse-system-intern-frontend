@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchMasterItems, Item } from '@/api/master-item/master-item';
 import { addScannedItems, fetchScannedItems, fetchScannedItemsBatch } from '@/api/scanned-item/scanned-item';
 import useDebounce from '@/hooks/useDebounce';
-
+import * as XLSX from 'xlsx';
 interface PreviewItem {
   invoiceNumber: string;
   sku: string;
@@ -121,7 +121,7 @@ const AddScanned = () => {
       selectedItem: '',
       barcodeSN: '',
       submitError: '',
-      submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
+      submitInvoiceNumbers: [] as string[],
       submitBarcodeSNs: [] as string[],
     });
   
@@ -156,27 +156,27 @@ const AddScanned = () => {
   
     try {
       // Fetch scanned items to check for duplicates by invoiceNumber
-      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase()); // Search by invoiceNumber (case-insensitive)
-      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase()); // Search by barcodeSN (case-insensitive)
+      const existingInvoiceItems = await fetchScannedItems(1, 5, invoiceNumber.toLowerCase());
+      const existingBarcodeItems = await fetchScannedItems(1, 5, barcodeSN.toLowerCase());
   
       const isInvoiceDuplicate = existingInvoiceItems.some(item => item.invoice_number.toLowerCase() === invoiceNumber.toLowerCase());
       const isBarcodeDuplicate = existingBarcodeItems.some(item => item.barcode_sn.toLowerCase() === barcodeSN.toLowerCase());
   
       if (isInvoiceDuplicate) {
         setError(prev => ({ ...prev, invoiceNumber: 'Invoice ini sudah pernah ditambahkan.' }));
-        setLoadingAddingItem(false);  // Stop loading
+        setLoadingAddingItem(false);
         return;
       }
   
       if (isBarcodeDuplicate) {
         setError(prev => ({ ...prev, barcodeSN: 'This Barcode SN is already added.' }));
-        setLoadingAddingItem(false);  // Stop loading
+        setLoadingAddingItem(false);
         return;
       }
   
       // Proceed to add item to the list if no duplicates
       const newItem = {
-        id: selectedItemId, // Added item ID for submission
+        id: selectedItemId,
         invoiceNumber: invoiceNumber,
         sku: selectedItem.split(' | ')[0],
         namaBarang: selectedItem.split(' | ')[1],
@@ -184,16 +184,31 @@ const AddScanned = () => {
         qty: 1,
       };
   
-      setItemList((prevList) => [...prevList, newItem]);
+      // Update state
+      setItemList(prevList => {
+        const updatedList = [...prevList, newItem];
+  
+        // Save the updated list to localStorage
+        localStorage.setItem('scannedItems', JSON.stringify(updatedList));
+  
+        return updatedList;
+      });
   
       // Clear inputs after adding to preview
       setBarcodeSN('');
-      setLoadingAddingItem(false);  // Stop loading
+      setLoadingAddingItem(false);
     } catch (error) {
       console.error('Error checking duplicates:', error);
-      setLoadingAddingItem(false);  // Stop loading on error
+      setLoadingAddingItem(false);
     }
-  };  
+  };
+
+  useEffect(() => {
+    const savedItems = localStorage.getItem('scannedItems');
+    if (savedItems) {
+      setItemList(JSON.parse(savedItems));
+    }
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -268,6 +283,7 @@ const AddScanned = () => {
       setSuccessMessage('Barang berhasil discan!');
       setInvoiceNumber('');
       setItemList([]);
+      localStorage.removeItem('scannedItems');
       setSelectedItem('Cari Barang');
       setSelectedItemId(null);
       setBarcodeSN('');
@@ -304,6 +320,7 @@ const AddScanned = () => {
   // Function to clear all items
   const handleClearAll = () => {
     setItemList([]); // Clear all items from itemList
+    localStorage.removeItem('scannedItems');
     setShowClearAllModal(false); // Close modal
   };
 
@@ -323,6 +340,53 @@ const AddScanned = () => {
   const showModalDeleteItemPreview = (barcodeSn: any) => {
     setSelectedBarcode(barcodeSn);
     setShowModal(true);
+  };
+
+  // State to manage modal visibility, file, and importing state
+  const [isOpenModalImport, setIsOpenModalImport] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // Function to open the modal
+  const openModalImport = () => {
+    setIsOpenModalImport(true);
+    setErrorMessage(""); // Reset error message when opening modal
+  };
+
+  // Function to close the modal
+  const closeModalImport = () => {
+    setIsOpenModalImport(false);
+    setSelectedFile(null);
+    setIsImporting(false);
+    setErrorMessage(""); // Clear any error message when closing modal
+  };
+
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setErrorMessage(""); // Clear any error message on file selection
+    }
+  };
+
+  // Handle file import
+  const handleImport = () => {
+    if (!selectedFile) {
+      setErrorMessage("Please select a valid Excel file.");
+      return;
+    }
+
+    setIsImporting(true);
+    console.log("Importing file:", selectedFile);
+
+    // Simulate import process
+    setTimeout(() => {
+      setIsImporting(false);
+      alert("File imported successfully!");
+      closeModalImport();
+    }, 3000);
   };
 
   return (
@@ -375,6 +439,63 @@ const AddScanned = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-1">
           {/* Scan SN */}  
+          {/* Button to open the modal */}
+          <button
+            className="btn btn-sm btn-success text-white hidden items-center gap-2 mb-2 "
+            onClick={openModalImport}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 48 48"
+            >
+              <path fill="#4CAF50" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"></path>
+              <path fill="#FFF" d="M32 15H39V18H32zM32 25H39V28H32zM32 30H39V33H32zM32 20H39V23H32zM25 15H30V18H25zM25 25H30V28H25zM25 30H30V33H25zM25 20H30V23H25z"></path>
+              <path fill="#2E7D32" d="M27 42L6 38 6 10 27 6z"></path>
+              <path fill="#FFF" d="M19.129,31l-2.411-4.561c-0.092-0.171-0.186-0.483-0.284-0.938h-0.037c-0.046,0.215-0.154,0.541-0.324,0.979L13.652,31H9.895l4.462-7.001L10.274,17h3.837l2.001,4.196c0.156,0.331,0.296,0.725,0.42,1.179h0.04c0.078-0.271,0.224-0.68,0.439-1.22L19.237,17h3.515l-4.199,6.939l4.316,7.059h-3.74V31z"></path>
+            </svg>
+            Import Excel
+          </button>
+
+          {/* Modal */}
+          {isOpenModalImport && (
+            <div className="modal modal-open">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg">Import Excel File</h3>
+                <p className="py-4">Choose an Excel file to import:</p>
+
+                {/* File input */}
+                <input
+                  type="file"
+                  className="file-input file-input-bordered w-full max-w-xs"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileChange}
+                />
+
+                {/* Error message */}
+                {errorMessage && (
+                  <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+                )}
+
+                {/* Show the Import and Close buttons side by side */}
+                <div className="flex justify-end gap-2 mt-4">
+                {selectedFile && (
+                    <button
+                      className={`btn btn-primary btn-md ${isImporting ? "animate-pulse" : ""}`}
+                      onClick={handleImport}
+                      disabled={isImporting}
+                    >
+                      {isImporting ? "Importing..." : "Import"}
+                    </button>
+                )}
+                    <button className="btn btn-md" onClick={closeModalImport}>
+                      Close
+                    </button>
+                  </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-3">
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Invoice Number</label>
@@ -507,7 +628,7 @@ const AddScanned = () => {
                   <span className="font-medium">Total Quantity (All Invoices):</span>
                   <span>{itemList.reduce((sum, item) => sum + item.qty, 0)}</span>
                 </div>
-                <div className='divider -my-2'></div>
+                <div className='divider my-2'></div>
                 {Object.entries(
                   itemList.reduce<{ [key: string]: PreviewItem[] }>((acc, item) => {
                     if (!acc[item.invoiceNumber]) {
