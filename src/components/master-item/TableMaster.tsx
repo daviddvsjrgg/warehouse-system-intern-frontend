@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { deleteMasterItem, fetchMasterItems, Item, PaginatedResponse } from '@/api/master-item/master-item'; // Ensure this path is correct
+import { deleteMasterItem, fetchMasterItems, Item, PaginatedResponse, updateMasterItem } from '@/api/master-item/master-item'; // Ensure this path is correct
 import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx'; // Import SheetJS
 import AddMaster from './AddMaster';
@@ -16,7 +16,7 @@ const Table: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
   const [idMasterItem, setIdMasterItem] = useState<number>(0);
-  const [namaBarang, setNamaBarang] = useState<string | null>(null);
+  const [namaBarang, setNamaBarang] = useState<string>('');
   const [sku, setSku] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [serverError, setServerError] = useState<boolean>(false);
@@ -105,6 +105,27 @@ const Table: React.FC = () => {
     }
   };
 
+  const handleEdit = async () => {
+    setIsEditing(true);
+    try {
+      await updateMasterItem(idMasterItem, namaBarang);
+      await loadMasterItems(currentPage, searchQuery); // Reload current page with search query
+      const modal = document.getElementById('edit_modal') as HTMLDialogElement | null;
+      if (modal) {
+        modal.close();
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error.message);
+        setServerError(true);
+      } else {
+        console.error('An unknown error occurred');
+      }
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   const handleExportExcel = async () => {
     try {
       const response: PaginatedResponse = await fetchMasterItems(1, '', 10000); // Fetch all data (up to 10,000 items)
@@ -158,6 +179,7 @@ const Table: React.FC = () => {
 
     return range;
   };
+  const [isEditing, setIsEditing] = useState<boolean>(false); // To show loading state while editing
 
   const paginationItems = getPaginationItems(currentPage, lastPage);
 
@@ -166,6 +188,43 @@ const Table: React.FC = () => {
 
   return (
     <>
+    {/* Modal Edit */}
+    <dialog id="edit_modal" className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Ubah Nama Barang</h3>
+          <p className="py-4">{sku} | {namaBarang}</p>
+          <input
+            type="text"
+            value={namaBarang}
+            onChange={(e) => setNamaBarang(e.target.value)}
+            className="input input-bordered w-full my-2"
+            placeholder="Masukkan nama barang"
+          />
+          <div className="flex justify-end">
+            {isEditing ? (
+              <></>
+            ) : (
+              <button
+                className="btn"
+                onClick={() => {
+                  const modal = document.getElementById('edit_modal') as HTMLDialogElement | null;
+                  if (modal) {
+                    modal.close();
+                  }
+                }}
+              >
+                Tidak
+              </button>
+            )}
+            <button disabled={isEditing ? true : false} onClick={handleEdit} className={`btn btn-primary text-white mx-2 ${isEditing ? "animate-pulse" : ""}`}>
+              {isEditing ? "Mengubah..." : "Ubah"}
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
       {/* Modal Delete */}
       <dialog id="delete_modal" className="modal">
         <div className="modal-box">
@@ -291,6 +350,21 @@ const Table: React.FC = () => {
                   <td>{item.sku}</td>
                   <td>{item.nama_barang}</td>
                   <td>
+                  <button
+                      className="btn btn-ghost btn-xs text-blue-500 ml-2"
+                      onClick={() => {
+                        const modal = document.getElementById('edit_modal') as HTMLDialogElement | null;
+                        if (modal) {
+                          modal.showModal();
+                        }
+                        setIdMasterItem(item.id);
+                        setSku(item.sku);
+                        setNamaBarang(item.nama_barang);
+                        setServerError(false);
+                      }}
+                    >
+                      Edit
+                    </button>
                     <button
                       className="btn btn-ghost btn-xs text-red-500"
                       onClick={() => {

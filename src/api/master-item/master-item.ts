@@ -129,7 +129,7 @@ export const addMasterItems = async (items: { sku: string; nama_barang: string; 
   }
 };
 // Function to update an existing item (UPDATE)
-export const updateMasterItem = async (id: number, sku: string, nama_barang: string, barcode_sn: string): Promise<Item> => {
+export const updateMasterItem = async (id: number, nama_barang: string): Promise<Item> => {
   const cookies = parseCookies();
   const token = cookies.token;
 
@@ -139,7 +139,7 @@ export const updateMasterItem = async (id: number, sku: string, nama_barang: str
 
   const response = await api.put<Item>(
     `${process.env.NEXT_PUBLIC_MASTER_ITEM_API}/${id}`,
-    { sku, nama_barang, barcode_sn, _method: 'PUT' }, // Method override for backward compatibility
+    { nama_barang, _method: 'PUT' }, // Method override for backward compatibility
     {
       headers: {
         Authorization: `Bearer ${token}`,
