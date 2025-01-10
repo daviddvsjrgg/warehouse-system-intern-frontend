@@ -51,6 +51,14 @@ const AddScanned = () => {
     }
   };
 
+  // State to handle whether the dropdown is open or closed
+  const [lainnyaIsOpen, setLainnyaIsOpen] = useState(false);
+
+  // Function to toggle the dropdown state (open/close)
+  const toggleLainnyaDropdown = () => {
+    setLainnyaIsOpen((prev) => !prev); // Toggle the value of isOpen
+  };
+
   const loadItems = async (page: number) => {
     if (loading || !hasMore) return;
     setLoading(true);
@@ -249,6 +257,16 @@ const AddScanned = () => {
       // Format error messages for duplicates
       let errorMessage = '';
   
+      const barcodeSet = new Set<string>();
+      for (let i = 0; i < itemList.length; i++) {
+        const barcode = itemList[i].barcode_sn.toLowerCase();
+        if (barcodeSet.has(barcode)) {
+          setError(prev => ({ ...prev, barcodeSN: 'Duplicate Barcode SN found in the list.' }));
+          const item = itemList[i];
+          duplicateBarcodes.add(item.barcode_sn + " = Multiple Barcode SN Detected");
+        }
+        barcodeSet.add(barcode);
+      }
       // Format duplicate invoices section
       if (duplicateInvoices.size > 0) {
         errorMessage += 'Duplicate Invoice Numbers:<br>';
@@ -325,7 +343,7 @@ const AddScanned = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !autoInputEnabled) {
       handleAddItem();
     }
   };
@@ -333,8 +351,18 @@ const AddScanned = () => {
   const [showModal, setShowModal] = useState(false);
 
   const handleDeleteItemPreview = () => {
-    setItemList((prevList) => prevList.filter((item) => item.barcode_sn !== selectedBarcode));
-    setShowModal(false); // Close the modal after deletion
+    setItemList((prevList) => {
+      // Filter out the item to delete
+      const updatedList = prevList.filter((item) => item.barcode_sn !== selectedBarcode);
+  
+      // Update local storage
+      localStorage.setItem('scannedItems', JSON.stringify(updatedList));
+  
+      return updatedList;
+    });
+  
+    // Close the modal after deletion
+    setShowModal(false);
   };
 
   const showModalDeleteItemPreview = (barcodeSn: any) => {
@@ -387,6 +415,32 @@ const AddScanned = () => {
       alert("File imported successfully!");
       closeModalImport();
     }, 3000);
+  };
+
+  const handleCopyToExcel = () => {
+    // Prepare data for Excel
+    const excelData = itemList.map(item => ({
+      Invoice: item.invoiceNumber,
+      SKU: item.sku,
+      Barcode_SN: item.barcode_sn,
+    }));
+  
+    // Create a worksheet from the data
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+  
+    // Set column widths (you can adjust the width values based on your needs)
+    worksheet['!cols'] = [
+      { wch: 15 },  // Invoice column width (15 characters wide)
+      { wch: 20 },  // SKU column width (20 characters wide)
+      { wch: 25 },  // Barcode_SN column width (25 characters wide)
+    ];
+  
+    // Create a new workbook and append the worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Items');
+  
+    // Trigger file download with the specified filename
+    XLSX.writeFile(workbook, 'Preview_Items_List.xlsx');
   };
 
   return (
@@ -656,24 +710,68 @@ const AddScanned = () => {
          {itemList.length > 0 && (
           <div className="mt-4">
             <div className='flex justify-between'>
-              <h3 className="text-lg font-semibold">Items Preview</h3>
-              {/* Undo and Clear All Buttons */}
+              <h3 className="text-lg font-semibold flex">
+                Items Preview ({itemList.length}/500) <p className='text-sm ml-0.5 text-gray-400 dark:text-white'>limit</p>
+              </h3>
+              {/* Undo , Copy to Excel, & Clear All Buttons */}
               <div className="flex my-2">
-                <button
-                  type="button"
-                  className="btn btn-warning mx-2 btn-sm"
-                  onClick={handleUndo}
-                  disabled={itemList.length === 0}
-                >
-                  Undo
+                <button className="btn btn-sm mx-2 btn-success text-white" onClick={handleCopyToExcel}>
+                  <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="25" height="25" viewBox="0 0 48 48">
+                    <path fill="#4CAF50" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"></path><path fill="#FFF" d="M32 15H39V18H32zM32 25H39V28H32zM32 30H39V33H32zM32 20H39V23H32zM25 15H30V18H25zM25 25H30V28H25zM25 30H30V33H25zM25 20H30V23H25z"></path><path fill="#2E7D32" d="M27 42L6 38 6 10 27 6z"></path><path fill="#FFF" d="M19.129,31l-2.411-4.561c-0.092-0.171-0.186-0.483-0.284-0.938h-0.037c-0.046,0.215-0.154,0.541-0.324,0.979L13.652,31H9.895l4.462-7.001L10.274,17h3.837l2.001,4.196c0.156,0.331,0.296,0.725,0.42,1.179h0.04c0.078-0.271,0.224-0.68,0.439-1.22L19.237,17h3.515l-4.199,6.939l4.316,7.059h-3.74V31z"></path>
+                  </svg>
+                  Export Excel
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-sm bg-gray-500 text-white"
-                  onClick={() => setShowClearAllModal(true)} // Show modal
-                >
-                  Clear All
-                </button>
+                <div className="dropdown dropdown-end ml-2">
+                  <label
+                    tabIndex={0}
+                    className="btn btn-sm bg-white text-gray-700 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 flex items-center"
+                    onClick={toggleLainnyaDropdown} // Attach the toggleLainnyaDropdown function to the onClick event
+                  >
+                    Other Menu
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className={`ml-2 w-5 h-5 transform transition-transform ${
+                        lainnyaIsOpen ? 'rotate-180' : ''
+                      }`} // Rotate the SVG based on lainnyaIsOpen state
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      />
+                    </svg>
+                  </label>
+                  <ul
+                    tabIndex={0}
+                    className={`dropdown-content z-50 menu p-2 shadow bg-base-100 border border-gray-300 dark:border-gray-600 rounded-box w-44 mt-2 ${
+                      lainnyaIsOpen ? 'block' : 'hidden'
+                    }`} // Show the dropdown content if lainnyaIsOpen is true
+                  >
+                    <li className='mb-2'>
+                      <button
+                        type="button"
+                        className="btn btn-ghost mx-2 btn-sm"
+                        onClick={handleUndo}
+                        disabled={itemList.length === 0}
+                      >
+                        Undo
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost hover:bg-red-500 hover:text-white"
+                        onClick={() => setShowClearAllModal(true)} // Show modal
+                      >
+                        Clear All
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
