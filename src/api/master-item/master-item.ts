@@ -79,7 +79,9 @@ export const fetchMasterItems = async (page: number, query: string = '', per_pag
 
 
 // Function to add a new item (CREATE)
-export const addMasterItems = async (items: { sku: string; nama_barang: string; barcode_sn: string }[]): Promise<ItemBatch[]> => {
+export const addMasterItems = async (
+  items: { sku: string; nama_barang: string; barcode_sn: string }[]
+): Promise<any> => {
   const cookies = parseCookies();
   const token = cookies.token;
 
@@ -110,20 +112,20 @@ export const addMasterItems = async (items: { sku: string; nama_barang: string; 
     return response.data; // Returns an array of inserted items
   } catch (error: any) {
     console.error('Error adding master items:', error);
+
+    // Properly propagate the error
+    if (error.response && error.response.status === 422) {
+      const errorMessage = error.response.data?.message || 'Validation Error';
+      throw new Error(errorMessage);
+    }
+
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      console.error('Response headers:', error.response.headers);
-      throw new Error(`Failed to add master items: ${error.response.data?.message || 'Unknown error'}`);
+      throw new Error(
+        `Failed to add master items: ${error.response.data?.message || 'Unknown error'}`
+      );
     } else if (error.request) {
-      // The request was made but no response was received
-      console.error('Request data:', error.request);
       throw new Error('Failed to add master items: No response from server');
     } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error message:', error.message);
       throw new Error(`Failed to add master items: ${error.message}`);
     }
   }

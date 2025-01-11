@@ -41,21 +41,33 @@ const AddMaster: React.FC = () => {
     };
 
     try {
+      setError('');
+
       // Create an array for batch submission
       const itemsToAdd = [newItem];
 
-      const addedItems = await addMasterItems(itemsToAdd); // Call the batch function
+      // Call the batch function to add items and capture the response in `addedItems`
+      const addedItems = await addMasterItems(itemsToAdd); // This is the full response object
 
-      setSuccess('Item(s) added successfully! Please refresh the table if necessary.');
-      setTimeout(() => {
-        setSuccess('');
-      }, 6000);
+      // Check the response status code (assuming 200 for success, others for errors)
+      if (addedItems.status_code === 201) {
+        // If the request was successful, get the success message
+        const successMessage = addedItems.message || 'Items added successfully!';
+        setSuccess(successMessage); // Display success message
+        // Reset input fields after successful submission
+        setSku('');
+        setNamaBarang('');
+        setTimeout(() => {
+          setSuccess(''); // Display success message
+        }, 6000);
+      } else {
+        // If the request failed (status_code is not 200), get the error message
+        setError(addedItems.message || 'An unknown error occurred.'); // Display error message
+      }
 
       console.log('Added Items:', addedItems);
       
-      // Reset input fields after successful submission
-      setSku('');
-      setNamaBarang('');
+      
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -117,10 +129,28 @@ const AddMaster: React.FC = () => {
         return;
       }
   
-      await addMasterItems(itemsToAdd); // Add items to the master list
-  
-      setSuccess('Item(s) added successfully! Please refresh the table if necessary.');
-      setTimeout(() => setSuccess(''), 6000); // Clear success message after 6 seconds
+      setError('');
+
+      // Call the batch function to add items and capture the response in `addedItems`
+      const addedItems = await addMasterItems(itemsToAdd); // This is the full response object
+
+      // Check the response status code (assuming 200 for success, others for errors)
+      if (addedItems.status_code === 201) {
+        // If the request was successful, get the success message
+        const successMessage = addedItems.message || 'Items added successfully!';
+        setSuccess(successMessage); // Display success message
+        // Reset input fields after successful submission
+        setSku('');
+        setNamaBarang('');
+        setTimeout(() => {
+          setSuccess(''); // Display success message
+        }, 6000);
+      } else {
+        // If the request failed (status_code is not 200), get the error message
+        setError(addedItems.message || 'An unknown error occurred.'); // Display error message
+      }
+
+      console.log('Added Items:', addedItems);
   
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unexpected error occurred while importing data.');
