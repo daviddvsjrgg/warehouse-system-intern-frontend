@@ -89,13 +89,21 @@ export const addMasterItems = async (
     throw new Error('No token found');
   }
 
-  // Check for duplicate SKUs within the provided items
   const skuSet = new Set<string>();
+  const duplicates: string[] = [];  // Array to collect all duplicates
+  
   for (const item of items) {
     if (skuSet.has(item.sku)) {
-      throw new Error(`Duplicate SKU found: ${item.sku}`);
+      // Collect the duplicate SKU
+      duplicates.push(item.sku);
+    } else {
+      skuSet.add(item.sku);  // Add the SKU to the set if not duplicate
     }
-    skuSet.add(item.sku);
+  }
+  
+  // After looping, check if there are any duplicates
+  if (duplicates.length > 0) {
+    throw new Error(`Importing Error: Duplicate SKUs found: ${duplicates.join(', ')}`);
   }
 
   try {
