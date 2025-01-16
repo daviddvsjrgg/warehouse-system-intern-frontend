@@ -13,6 +13,7 @@ import MasterItemIcon from '@/app/icon/MasterItemIcon';
 import ScannedItemIcon from '@/app/icon/ScannedItemIcon';
 import ReportIcon from '@/app/icon/ReportIcon';
 import InjectInvoiceIcon from '@/app/icon/InjectInvoiceIcon';
+import ScanIcon from '@/app/icon/ScanIcon';
 
 const Sidebar = () => {
   const pathname = usePathname(); // Pathname to highlight active link
@@ -94,7 +95,7 @@ const Sidebar = () => {
                 className={`flex items-center justify-between w-full p-2 rounded-md ${openScanDropdown === 'scan' ? 'bg-gray-300 dark:bg-gray-700 font-bold' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}
               >
                 <span className="flex items-center">
-                  <ScannedItemIcon />
+                  <ScanIcon />
                   Scan
                 </span>
                 <svg
