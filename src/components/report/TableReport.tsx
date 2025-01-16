@@ -1,7 +1,6 @@
 /* eslint-disable */ 
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem, getTotalItemScannedItems } from '@/api/scanned-item/scanned-item';
-// import Image from 'next/image';
 import { convertToJakartaTime } from '@/utils/dateUtils';
 import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingInterface';
 import useDebounce from '@/hooks/useDebounce';
@@ -619,75 +618,82 @@ const handleExportGrouping = async (): Promise<void> => {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="text-center">
-                      <span className="loading loading-dots loading-sm"></span>
-                    </td>
-                  </tr>
-                ) : (
-                  scannedItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className={`hover:bg-base-200 dark:hover:bg-gray-700`}
-                    >
-                      <td>{convertToJakartaTime(item.created_at)}</td>
-                      <td>{item.sku}</td>
-                      <td>{item.master_item.nama_barang}</td>
-                      <td>{item.invoice_number}</td>
-                      <td>{item.barcode_sn}</td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <div className="font-bold">{item.user.name}</div>
-                            <div className="text-sm opacity-50">
-                              {item.user.email}
-                            </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center">
+                    <span className="loading loading-dots loading-sm"></span>
+                  </td>
+                </tr>
+              ) : scannedItems.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center">
+                    Tidak ada data / Tidak ada SN Duplikat
+                  </td>
+                </tr>
+              ) : (
+                scannedItems.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-base-200 dark:hover:bg-gray-700`}
+                  >
+                    <td>{convertToJakartaTime(item.created_at)}</td>
+                    <td>{item.sku}</td>
+                    <td>{item.master_item.nama_barang}</td>
+                    <td>{item.invoice_number}</td>
+                    <td>{item.barcode_sn}</td>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <div className="font-bold">{item.user.name}</div>
+                          <div className="text-sm opacity-50">
+                            {item.user.email}
                           </div>
                         </div>
-                      </td>
-                      <th>
-                        {hasUpdatePermission && (
-                          <label
-                            htmlFor="edit_report"
-                            className="btn btn-ghost btn-xs text-blue-500"
-                            onClick={() =>
-                              handleEdit(
-                                item.id,
-                                item.sku,
-                                item.qty,
-                                item.barcode_sn,
-                                item.master_item.nama_barang
-                              )
+                      </div>
+                    </td>
+                    <th>
+                      {hasUpdatePermission && (
+                        <label
+                          htmlFor="edit_report"
+                          className="btn btn-ghost btn-xs text-blue-500"
+                          onClick={() =>
+                            handleEdit(
+                              item.id,
+                              item.sku,
+                              item.qty,
+                              item.barcode_sn,
+                              item.master_item.nama_barang
+                            )
+                          }
+                        >
+                          Edit
+                        </label>
+                      )}
+                      {hasDeletePermission && (
+                        <button
+                          className="btn btn-ghost btn-xs text-red-500"
+                          onClick={() => {
+                            const modal = document.getElementById(
+                              "delete_modal"
+                            ) as HTMLDialogElement | null;
+                            if (modal) {
+                              modal.showModal();
                             }
-                          >
-                            Edit
-                          </label>
-                        )}
-                        {hasDeletePermission && (
-                          <button
-                            className="btn btn-ghost btn-xs text-red-500"
-                            onClick={() => {
-                              const modal = document.getElementById(
-                                "delete_modal"
-                              ) as HTMLDialogElement | null;
-                              if (modal) {
-                                modal.showModal();
-                              }
-                              setDeleteReportId(item.id);
-                              setDeleteInvoice(item.invoice_number)
-                              setDeleteSku(item.sku);
-                              setDeleteBarcodeSN(item.barcode_sn)
-                              setDeleteNamaBarang(item.master_item.nama_barang)
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </th>
-                    </tr>
-                  ))
-                )}
+                            setDeleteReportId(item.id);
+                            setDeleteInvoice(item.invoice_number)
+                            setDeleteSku(item.sku);
+                            setDeleteBarcodeSN(item.barcode_sn)
+                            setDeleteNamaBarang(item.master_item.nama_barang)
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </th>
+                  </tr>
+                ))
+              )}
+
               </tbody>
             </table>
             {/* Pagination Controls */}

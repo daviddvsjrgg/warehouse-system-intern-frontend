@@ -343,7 +343,7 @@ const AddScanned = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !autoInputEnabled) {
+    if (e.key === 'Enter' && !autoInputEnabled && !loadingAddingItem) {
       handleAddItem();
     }
   };
