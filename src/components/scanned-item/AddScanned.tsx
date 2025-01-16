@@ -711,7 +711,7 @@ const AddScanned = () => {
           <div className="mt-4">
             <div className='flex justify-between'>
               <h3 className="text-lg font-semibold flex">
-                Items Preview ({itemList.length}/500) <p className='text-sm ml-0.5 text-gray-400 dark:text-white'>limit</p>
+                Items Preview ({itemList.length}/2000) <p className='text-sm ml-0.5 text-gray-400 dark:text-white'>limit</p>
               </h3>
               {/* Undo , Copy to Excel, & Clear All Buttons */}
               <div className="flex my-2">

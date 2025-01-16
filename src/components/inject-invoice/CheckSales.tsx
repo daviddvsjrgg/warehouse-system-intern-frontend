@@ -1,5 +1,5 @@
 /* eslint-disable */ 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const CheckSales = () => {
   // State to keep track of barcode serial numbers
@@ -7,9 +7,18 @@ const CheckSales = () => {
   const [invoice, setInvoice] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  // Refs to keep track of input elements
+  const invoiceRef = useRef<HTMLInputElement | null>(null); // Ref for the invoice input
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // Refs for barcode inputs
+
+  // Focus on the invoice input when the component mounts
+  useEffect(() => {
+    invoiceRef.current?.focus();
+  }, []);
+
   // Handle adding a new barcode input field
   const addBarcode = () => {
-    setBarcodes([...barcodes, ""]);
+    setBarcodes((prev) => [...prev, ""]);
   };
 
   // Handle changing barcode serial number value
@@ -23,7 +32,15 @@ const CheckSales = () => {
   const removeBarcode = (index: number) => {
     const updatedBarcodes = barcodes.filter((_, i) => i !== index);
     setBarcodes(updatedBarcodes);
+    inputRefs.current = inputRefs.current.filter((_, i) => i !== index); // Clean up refs
   };
+
+  // Focus on the last input whenever a new input is added
+  useEffect(() => {
+    if (barcodes.length > 1) {
+      inputRefs.current[barcodes.length - 1]?.focus();
+    }
+  }, [barcodes]);
 
   // Handle the "Check" button click
   const handleCheck = () => {
@@ -46,16 +63,18 @@ const CheckSales = () => {
 
   return (
     <div>
+      {/* Invoice Input */}
       <label className="form-control w-full max-w-xs">
         <div className="label">
           <span className="label-text">Invoice</span>
         </div>
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Enter invoice"
           value={invoice}
-          onChange={(e) => setInvoice(e.target.value)} 
-          className="input input-bordered w-full max-w-xs" 
+          ref={invoiceRef} // Assign ref to the invoice input
+          onChange={(e) => setInvoice(e.target.value)}
+          className="input input-bordered w-full max-w-xs"
         />
       </label>
 
@@ -68,19 +87,22 @@ const CheckSales = () => {
                 <div className="label">
                   <span className="label-text">Barcode SN {index + 1}</span>
                 </div>
-                <input 
-                  type="text"
-                  value={barcode}
-                  onChange={(e) => handleBarcodeChange(index, e.target.value)}
-                  placeholder="Enter barcode SN"
-                  className="input input-bordered w-full"
+                <input
+                type="text"
+                value={barcode}
+                ref={(el) => {
+                    inputRefs.current[index] = el; // Correctly assign the element to the ref
+                }}
+                onChange={(e) => handleBarcodeChange(index, e.target.value)}
+                placeholder="Enter barcode SN"
+                className="input input-bordered w-full"
                 />
               </label>
             </div>
 
-            {/* Show "-" Button only if it's not the first barcode input */}
+            {/* "-" Button (Remove) */}
             {index > 0 && (
-              <button 
+              <button
                 type="button"
                 className="btn btn-danger ml-2 btn-sm"
                 onClick={() => removeBarcode(index)}
@@ -89,9 +111,9 @@ const CheckSales = () => {
               </button>
             )}
 
-            {/* Show "+" Button only for the last input */}
+            {/* "+" Button (Add) */}
             {index === barcodes.length - 1 && (
-              <button 
+              <button
                 type="button"
                 className="btn btn-info ml-2 btn-sm"
                 onClick={addBarcode}
@@ -104,17 +126,11 @@ const CheckSales = () => {
       </div>
 
       {/* Error Message */}
-      {errorMessage && (
-        <p className="text-red-500 mt-2">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
 
       {/* Check Button */}
       <div className="mt-3">
-        <button 
-          type="button"
-          className="btn btn-primary"
-          onClick={handleCheck}
-        >
+        <button type="button" className="btn btn-primary" onClick={handleCheck}>
           Check
         </button>
       </div>
