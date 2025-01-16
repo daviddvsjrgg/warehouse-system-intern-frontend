@@ -39,6 +39,7 @@ const TableReport: React.FC = () => {
   const [namaBarang, setNamaBarang] = useState<string>('');
   const [totalItem, setTotalItem] = useState<number>(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [checkDuplicate, setCheckDuplicate] = useState(false);
 
   const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
   const [hasReadPermission, setHasReadPermission] = useState(false);
@@ -51,7 +52,7 @@ const TableReport: React.FC = () => {
   const getScannedItems = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
+      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate);
       const totalData = await getTotalItemScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
       setTotalItem(totalData.total);
       setScannedItems(items);
@@ -62,7 +63,7 @@ const TableReport: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate]);
+  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate]);
 
   // Effect to handle search and change perPage value
   useEffect(() => {
@@ -595,6 +596,14 @@ const handleExportGrouping = async (): Promise<void> => {
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className='ml-2 mb-2'>
+                <button
+                  onClick={() => setCheckDuplicate(!checkDuplicate)}
+                  className='btn btn-primary btn-sm'
+                >
+                  {checkDuplicate ? 'Check Duplicate SN: ON' : 'Check Duplicate SN: OFF'}
+                </button>
               </div>
             <table className="table">
               {/* Table Head */}

@@ -53,21 +53,13 @@ export interface ApiResponse {
   };
 }
 
-/**
- * Fetch scanned items with optional filters for pagination, exact search, and date range.
- * @param page - The page number for pagination.
- * @param perPage - The number of items per page.
- * @param exactSearch - The exact SKU or invoice number to search for.
- * @param startDate - The start date for filtering scanned items.
- * @param endDate - The end date for filtering scanned items.
- * @returns An array of scanned items.
- */
 export const fetchScannedItems = async (
   page: number = 1,
   perPage: number = 5,
   exactSearch: string = '',
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  checkDuplicate?: boolean,
 ): Promise<FetchScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token;
@@ -82,6 +74,7 @@ export const fetchScannedItems = async (
     
     queryParams.push(`per_page=${perPage}`); // Add pagination
     queryParams.push(`page=${page}`); // Add page number
+    queryParams.push(`check-duplicate=${checkDuplicate}`);
 
     if (exactSearch) {
       queryParams.push(`exact=${encodeURIComponent(exactSearch)}`); // SKU search
