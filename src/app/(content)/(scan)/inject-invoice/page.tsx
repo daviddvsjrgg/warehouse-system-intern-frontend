@@ -20,7 +20,7 @@ const Page = () => {
         <main className="p-6 flex-1">
           <div className="card shadow-xl bg-white dark:bg-gray-800">
             <div className="card-body text-gray-900 dark:text-gray-100">
-              <h2 className="card-title">Inject Invoice</h2>
+              <h2 className="card-title">Inject Invoice (Testing)</h2>
                 <CheckSales />
             </div>
           </div>
