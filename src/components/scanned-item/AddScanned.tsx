@@ -1051,7 +1051,7 @@ const AddScanned = () => {
                             {skuItems.map((item, index) => (
                               <tr
                                 key={item.barcode_sn}
-                                className={`bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 ${lastAddedBarcode === item.barcode_sn ? 'bg-green-100 animate-pulse' : ''}`}
+                                className={`bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 ${lastAddedBarcode === item.barcode_sn ? 'bg-green-200 animate-pulse' : ''}`}
                                 id={`row-${item.barcode_sn}`}
                               >
                                 <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{index + 1}</td>
