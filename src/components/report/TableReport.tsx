@@ -37,8 +37,10 @@ const TableReport: React.FC = () => {
   const [originalBarcodeSn, setOriginalBarcodeSn] = useState<string>(''); // Track original barcode value
   const [namaBarang, setNamaBarang] = useState<string>('');
   const [totalItem, setTotalItem] = useState<number>(0);
-  const [isOpen, setIsOpen] = useState(false);
+  const [perPageisOpen, setPerPageIsOpen] = useState(false);
   const [checkDuplicate, setCheckDuplicate] = useState(false);
+
+  // Permission
 
   const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
   const [hasReadPermission, setHasReadPermission] = useState(false);
@@ -46,12 +48,26 @@ const TableReport: React.FC = () => {
   const [hasDeletePermission, setHasDeletePermission] = useState(false);
 
   const [rolesFetched, setRolesFetched] = useState(false); // State to indicate roles fetching completion
+  
+  const [searchFilterisOpen, setSearchFilterIsOpen] = useState(false); // Dropdown visibility
+  const [selectedFilter, setSelectedFilter] = useState<string>('Semua'); // Selected option
+  const [isExactSearch, setIsExactSearch] = useState(true);
 
+
+  const toggleDropdownSearchFilter = () => setSearchFilterIsOpen(!searchFilterisOpen);
+
+  const handleChange = (value: string) => {
+    setSelectedFilter(value); // Update the selected option
+  };
+
+  const toggleExactSearch = () => {
+    setIsExactSearch(!isExactSearch);
+  };
   
   const getScannedItems = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate);
+      const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate, isExactSearch, selectedFilter);
       const totalData = await getTotalItemScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
       setTotalItem(totalData.total);
       setScannedItems(items);
@@ -62,7 +78,7 @@ const TableReport: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate]);
+  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate, selectedFilter, isExactSearch]);
 
   // Effect to handle search and change perPage value
   useEffect(() => {
@@ -337,15 +353,15 @@ const handleExportGrouping = async (): Promise<void> => {
   }
 };
 
- const handleChange = (value: number) => {
+ const handlePerPageChange = (value: number) => {
     setPerPage(value);
     console.log(`Items per page: ${value}`);
     // Add logic here to handle perPage change, such as fetching data
   };
 
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
+  const toggleDropdownPerPage = () => {
+    setPerPageIsOpen(!perPageisOpen);
   };
   
   return (
@@ -454,10 +470,12 @@ const handleExportGrouping = async (): Promise<void> => {
                     <div className="dropdown relative">
                       <label
                         tabIndex={0}
-                        className="btn bg-white flex items-center justify-between w-auto btn-sm border-gray-300"
-                        onClick={toggleDropdown}
+                        className="btn bg-white dark:bg-gray-800 flex items-center justify-between w-auto btn-sm border-gray-300 dark:border-gray-700"
+                        onClick={toggleDropdownPerPage}
                       >
-                        <span>Per halaman: {perPage === 1000000000000 ? "Semua" : perPage} data</span>
+                        <span className="text-black dark:text-white">
+                          Per halaman: {perPage === 1000000000000 ? "Semua" : perPage} data
+                        </span>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
@@ -465,8 +483,8 @@ const handleExportGrouping = async (): Promise<void> => {
                           strokeWidth={1.5}
                           stroke="currentColor"
                           className={`ml-2 w-5 h-5 transform transition-transform ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
+                            perPageisOpen ? "rotate-180" : ""
+                          } dark:stroke-white`}
                         >
                           <path
                             strokeLinecap="round"
@@ -477,34 +495,34 @@ const handleExportGrouping = async (): Promise<void> => {
                       </label>
                       <ul
                         tabIndex={0}
-                        className={`dropdown-content menu p-2 shadow bg-white border border-gray-300 rounded-box w-52 z-50 absolute mt-2 ${
-                          isOpen ? "block" : "hidden"
+                        className={`dropdown-content menu p-2 shadow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-box w-52 z-50 absolute mt-2 ${
+                          perPageisOpen ? "block" : "hidden"
                         }`}
                       >
                         {perPageValueOptions.map((option) => (
                           <li key={option}>
                             <a
                               onClick={() => {
-                                // Allow "Semua" only if skuSearch has a value
-                                if (option === 1000000000000 && skuSearch) {
-                                  handleChange(option);
-                                  setIsOpen(false); // Close dropdown on selection
+                                // Allow "Semua" only if skuSearch has more than 4 characters
+                                if (option === 1000000000000 && skuSearch && skuSearch.length > 4) {
+                                  handlePerPageChange(option);
+                                  setPerPageIsOpen(false); // Close dropdown on selection
                                 }
                                 // Allow other options unconditionally
                                 if (option !== 1000000000000) {
-                                  handleChange(option);
-                                  setIsOpen(false); // Close dropdown on selection
+                                  handlePerPageChange(option);
+                                  setPerPageIsOpen(false); // Close dropdown on selection
                                 }
                               }}
                               className={`block px-4 py-2 rounded ${
                                 option === 1000000000000
-                                  ? skuSearch
-                                    ? "hover:bg-gray-100 cursor-pointer"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                  : "hover:bg-gray-100 cursor-pointer"
+                                  ? skuSearch && skuSearch.length > 4
+                                    ? "hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
+                                  : "hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                               } ${
                                 perPage === option
-                                  ? "active text-primary font-bold bg-gray-100"
+                                  ? "active text-primary font-bold bg-gray-100 dark:bg-gray-700"
                                   : ""
                               }`}
                             >
@@ -514,6 +532,7 @@ const handleExportGrouping = async (): Promise<void> => {
                         ))}
                       </ul>
                     </div>
+
                     <div className='flex'>
                       <input
                         type="date"
@@ -560,40 +579,104 @@ const handleExportGrouping = async (): Promise<void> => {
                       </ul>
                     </div>
                   )}
-                    <div className="max-w-md">
-                      <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
-                        Search
-                      </label>
-                      {error && <div className="text-red-500">{error}</div>}
-                      <div className="relative">
-                        <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  {/* Dropdown Menu */}
+                  <div className="relative w-auto">
+                      <div className="">
+                        <label
+                          tabIndex={0}
+                          className="btn bg-white dark:bg-gray-800 flex items-center justify-between w-full btn-sm border-gray-300 dark:border-gray-700"
+                          onClick={toggleDropdownSearchFilter}
+                        >
+                          <span className="text-black dark:text-white">
+                            Search Filter: {selectedFilter ? selectedFilter : "Semua"}
+                          </span>
                           <svg
-                            className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                            aria-hidden="true"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
-                            viewBox="0 0 20 20"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className={`ml-2 w-5 h-5 transform transition-transform ${
+                              searchFilterisOpen ? "rotate-180" : ""
+                            } dark:stroke-white`}
                           >
                             <path
-                              stroke="currentColor"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                              d="m19.5 8.25-7.5 7.5-7.5-7.5"
                             />
                           </svg>
+                        </label>
+                        <ul
+                          tabIndex={0}
+                          className={`dropdown-content menu p-2 shadow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-box w-full z-50 absolute mt-2 ${
+                            searchFilterisOpen ? "block" : "hidden"
+                          }`}
+                        >
+                          {["SKU", "Invoice", "SN", "Semua"].map((option) => (
+                            <li key={option} onBlur={() => setSearchFilterIsOpen(false)}>
+                              <a
+                                onClick={() => {
+                                  handleChange(option);
+                                  setSearchFilterIsOpen(false); // Close dropdown on selection
+                                }}
+                                className={`block px-4 py-2 rounded ${
+                                  selectedFilter === option
+                                    ? "active text-primary font-bold bg-gray-100 dark:bg-gray-700"
+                                    : "hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                }`}
+                              >
+                                {option}
+                              </a>
+                            </li>
+                          ))}
+                          <li>
+                            <label className="flex items-center px-4 py-2 rounded focus:bg-gray-500">
+                              <input
+                                type="checkbox"
+                                className="checkbox mr-2"
+                                checked={isExactSearch}
+                                onChange={toggleExactSearch}
+                              />
+                              Exact Search
+                            </label>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="mt-0.5">
+                        {error && <div className="text-red-500 mb-2">{error}</div>}
+                        <div className="relative">
+                          <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                            <svg
+                              className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                              aria-hidden="true"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                              />
+                            </svg>
+                          </div>
+                          <input
+                            type="text"
+                            value={skuSearch}
+                            onChange={(e) => setSkuSearch(e.target.value)}
+                            id="default-search"
+                            className="block w-full input-sm p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
+                            placeholder="Cari sku, barcode sn, inv"
+                            required
+                          />
                         </div>
-                        <input
-                          type="text"
-                          value={skuSearch}
-                          onChange={(e) => setSkuSearch(e.target.value)}
-                          id="default-search"
-                          className="block w-full input-sm p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-gray-500 dark:focus:border-gray-500"
-                          placeholder="Cari sku, barcode sn, inv"
-                          required
-                        />
+                      </div>
                     </div>
-                  </div>
+
                 </div>
               </div>
               <div className='ml-2 mb-2'>

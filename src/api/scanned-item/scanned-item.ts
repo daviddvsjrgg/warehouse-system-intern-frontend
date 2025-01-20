@@ -60,6 +60,8 @@ export const fetchScannedItems = async (
   startDate?: string,
   endDate?: string,
   checkDuplicate?: boolean,
+  isExactSearch?: boolean,
+  selectedFilter?: string, // Include selectedFilter
 ): Promise<FetchScannedItem[]> => {
   const cookies = parseCookies();
   const token = cookies.token;
@@ -69,41 +71,50 @@ export const fetchScannedItems = async (
   }
 
   try {
-    // Build the query string based on the provided parameters
     const queryParams: string[] = [];
-    
-    queryParams.push(`per_page=${perPage}`); // Add pagination
-    queryParams.push(`page=${page}`); // Add page number
+    queryParams.push(`per_page=${perPage}`);
+    queryParams.push(`page=${page}`);
     queryParams.push(`check-duplicate=${checkDuplicate}`);
+    queryParams.push(`is_exact_search=${isExactSearch}`); // Use the isExactSearch flag
 
     if (exactSearch) {
-      queryParams.push(`exact=${encodeURIComponent(exactSearch)}`); // SKU search
+      queryParams.push(`exact=${encodeURIComponent(exactSearch)}`);
     }
+
+    if (selectedFilter) {
+      // Convert selectedFilter to appropriate query parameters
+      if (selectedFilter === 'Semua') {
+        queryParams.push('selected_filter='); // Empty for backend to search all fields
+      } else {
+        queryParams.push(
+          `selected_filter=${encodeURIComponent(selectedFilter.toLowerCase())}`
+        );
+      }
+    }
+
     if (startDate) {
-      queryParams.push(`start_date=${encodeURIComponent(startDate)}`); // Start date filter
+      queryParams.push(`start_date=${encodeURIComponent(startDate)}`);
     }
     if (endDate) {
-      queryParams.push(`end_date=${encodeURIComponent(endDate)}`); // End date filter
+      queryParams.push(`end_date=${encodeURIComponent(endDate)}`);
     }
 
     const response = await api.get<ApiResponse>(
-      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.join('&')}`, // Querying with parameters
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.join('&')}`,
       {
         headers: {
-          Authorization: `Bearer ${token}`, // Authorization header
+          Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    // Check if response was successful
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch scanned items');
     }
 
-    // Return the scanned items data from the API response
-    return response.data.data.data; // Accessing the data array inside the response
+    return response.data.data.data;
   } catch (error) {
-    const errorMessage = (error as Error).message || "Unknown Error";
+    const errorMessage = (error as Error).message || 'Unknown Error';
     throw new Error(errorMessage);
   }
 };
