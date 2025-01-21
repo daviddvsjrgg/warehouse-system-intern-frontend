@@ -68,7 +68,7 @@ const TableReport: React.FC = () => {
     setLoading(true);
     try {
       const items = await fetchScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate, isExactSearch, selectedFilter);
-      const totalData = await getTotalItemScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate);
+      const totalData = await getTotalItemScannedItems(currentPage, perPage, debouncedSkuSearch, startDate, endDate, isExactSearch, selectedFilter);
       setTotalItem(totalData.total);
       setScannedItems(items);
       setNextButtonClicked(false); // Reset next button state after fetching
