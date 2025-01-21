@@ -14,6 +14,7 @@ import ScannedItemIcon from '@/app/icon/ScannedItemIcon';
 import ReportIcon from '@/app/icon/ReportIcon';
 import InjectInvoiceIcon from '@/app/icon/InjectInvoiceIcon';
 import ScanIcon from '@/app/icon/ScanIcon';
+import CheckInvoiceIcon from '@/app/icon/CheckInvoiceIcon';
 
 const Sidebar = () => {
   const pathname = usePathname(); // Pathname to highlight active link
@@ -79,7 +80,7 @@ const Sidebar = () => {
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${openUserManagementDropdown === 'user-management' ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
               >
                 <li className="pl-6 mt-2">{renderNavItem('/user-management', 'Users', UsersIcon)}</li>
-                <li className="pl-6 mt-2">{renderNavItem('/roles', 'Roles', RoleIcon)}</li>
+                <li className="pl-6 mt-2">{renderNavItem('/roles', 'Access', RoleIcon)}</li>
                 <li className="pl-6 mt-2">{renderNavItem('/permissions', 'Permissions', PermissionIcon)}</li>
               </ul>
             </li>
@@ -114,6 +115,7 @@ const Sidebar = () => {
               >
                 <li className="pl-6 mt-2">{renderNavItem('/scanned-item', 'Scan SN', ScannedItemIcon)}</li>
                 <li className="pl-6 mt-2">{renderNavItem('/inject-invoice', 'Inject Invoice', InjectInvoiceIcon)}</li>
+                <li className="pl-6 mt-2">{renderNavItem('/invoice-sn', 'Tambah SN Lama', CheckInvoiceIcon)}</li>
               </ul>
             </li>
           )}

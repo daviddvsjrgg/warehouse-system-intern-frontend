@@ -14,5 +14,5 @@ export const convertToJakartaTime = (utcDate: string): string => {
   const seconds = ('0' + date.getSeconds()).slice(-2);
 
   // Return formatted date and time in the YYYY-DD-MM and 24-hour format
-  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+  return `${year}-${month}- ${day} ${hours}:${minutes}:${seconds}`;
 };

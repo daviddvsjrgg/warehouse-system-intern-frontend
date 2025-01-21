@@ -170,6 +170,7 @@ export const getTotalItemScannedItems = async (
   exactSearch: string = '',
   startDate?: string,
   endDate?: string,
+  checkDuplicate?: boolean,
   isExactSearch?: boolean,
   selectedFilter?: string,
 ) => {
@@ -184,6 +185,7 @@ export const getTotalItemScannedItems = async (
     const queryParams: string[] = [];
     queryParams.push(`per_page=${perPage}`);
     queryParams.push(`page=${page}`);
+    queryParams.push(`check-duplicate=${checkDuplicate}`);
     queryParams.push(`is_exact_search=${isExactSearch}`); // Use the isExactSearch flag
 
     if (exactSearch) {
