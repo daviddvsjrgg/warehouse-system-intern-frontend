@@ -7,6 +7,9 @@ import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx';
 import { fetchRolesPermissions } from '@/api/user-management/roles';
 import { FeatureDisabled } from '@/components/alerts/feature-disabled';
+import EditIcon from '@/app/icon/EditIcon';
+import fetchInvoiceByNumber from '@/api/invoice/invoice';
+
 
 const TableReport: React.FC = () => {
   const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]);
@@ -16,7 +19,9 @@ const TableReport: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [skuSearch, setSkuSearch] = useState<string>('');
   const [editSku, setEditSku] = useState<string>('');
+  const [editInvoice, setEditInvoice] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingInvoice, setIsEditingInvoice] = useState(false);
   const [deleteReportId, setDeleteReportId] = useState<number>(0);
   const [deleteSku, setDeleteSku] = useState<string | null>(null);
   const [deleteBarcodeSN, setDeleteBarcodeSN] = useState<string | null>(null);
@@ -29,7 +34,7 @@ const TableReport: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null); // Track save success
   const [validationError, setValidationError] = useState<string | null>(null);
   const debouncedSkuSearch = useDebounce(skuSearch, 300);
-  const perPageValueOptions = [5, 10, 25, 50, 100, 1000000000000]; // "All" represented as a very large number
+  const perPageValueOptions = [5, 10, 25, 50, 100, 500]; // "All" represented as a very large number
   const [perPage, setPerPage] = useState<number>(5);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [nextButtonClicked, setNextButtonClicked] = useState<boolean>(false);
@@ -39,9 +44,13 @@ const TableReport: React.FC = () => {
   const [totalItem, setTotalItem] = useState<number>(0);
   const [perPageisOpen, setPerPageIsOpen] = useState(false);
   const [checkDuplicate, setCheckDuplicate] = useState(false);
+  const [searchFilterisOpen, setSearchFilterIsOpen] = useState(false); // Dropdown visibility
+  const [selectedFilter, setSelectedFilter] = useState<string>('Semua'); // Selected option
+  const [isExactSearch, setIsExactSearch] = useState(true);
+  const [invoiceData, setInvoiceData] = useState<any | null>(null);
+  const [isEditingLoading, setIsEditingLoading] = useState(false);
 
-  // Permission
-
+  // Permission =================================================================
   const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
   const [hasReadPermission, setHasReadPermission] = useState(false);
   const [hasExportPermission, setHasExportPermission] = useState(false);
@@ -49,9 +58,6 @@ const TableReport: React.FC = () => {
 
   const [rolesFetched, setRolesFetched] = useState(false); // State to indicate roles fetching completion
   
-  const [searchFilterisOpen, setSearchFilterIsOpen] = useState(false); // Dropdown visibility
-  const [selectedFilter, setSelectedFilter] = useState<string>('Semua'); // Selected option
-  const [isExactSearch, setIsExactSearch] = useState(true);
 
 
   const toggleDropdownSearchFilter = () => setSearchFilterIsOpen(!searchFilterisOpen);
@@ -138,7 +144,37 @@ useEffect(() => {
     return <div>Error: {error}</div>;
   }
 
-  const handleEdit = (id: number, sku: string, qty: number, barcode: string, nama_barang: string) => {
+  const handleEdit = async (id: number, sku: string, qty: number, barcode: string, nama_barang: string, invoice_number: string) => {
+    setNamaBarang(nama_barang);
+    setEditSku(sku);
+    setEditId(id);
+    setQuantity(qty);
+    setBarcodeSn(barcode);
+    setEditInvoice(invoice_number);
+    setSaveSuccess(null); // Reset success message
+    setValidationError(null);
+    // Open the modal
+    const modal = document.getElementById(
+      'edit_invoice_modal'
+    ) as HTMLDialogElement | null;
+    if (modal) modal.showModal();
+
+    setIsEditingLoading(true); // Start loading state
+    try {
+      const response = await fetchInvoiceByNumber(invoice_number);
+      if (response && response.success) {
+        setInvoiceData(response.data.data[0]); // Assuming single invoice
+      } else {
+        setError('Failed to fetch invoice data.');
+      }
+    } catch (err) {
+      setError('Error fetching invoice data.');
+    } finally {
+      setIsEditingLoading(false); // End loading state
+    }
+  };
+
+  const handleEditBarcodeSN = (id: number, sku: string, qty: number, barcode: string, nama_barang: string) => {
     setNamaBarang(nama_barang);
     setEditSku(sku);
     setEditId(id);
@@ -155,7 +191,7 @@ useEffect(() => {
     setNextButtonClicked(true); // Set to true when next button is clicked
   };
 
-  const handleSaveEditReport = async () => {
+  const handleSaveEditBarcodeSN = async () => {
     // Validate inputs
     if (
         editId === null || 
@@ -359,6 +395,10 @@ const handleExportGrouping = async (): Promise<void> => {
     // Add logic here to handle perPage change, such as fetching data
   };
 
+  const handleSubmitEditInvoice = () => {
+    console.log("submit data")
+  }
+
 
   const toggleDropdownPerPage = () => {
     setPerPageIsOpen(!perPageisOpen);
@@ -399,14 +439,97 @@ const handleExportGrouping = async (): Promise<void> => {
             <button>close</button>
           </form>
         </dialog>
+        {/* Modal Edit Invoice */}
+        <dialog id="edit_invoice_modal" className="modal">
+          <div className="modal-box max-w-5xl">
+            <h3 className="font-bold text-lg">Invoice: {editInvoice}</h3>
+            {isEditingLoading ? (
+              <span className="loading loading-dots loading-sm"></span>
+            ) : error ? (
+              <div className="text-red-500">{error}</div>
+            ) : invoiceData ? (
+              <>
+                <p className="-mt-1 text-gray-500">{convertToJakartaTime(invoiceData.created_at)}</p>
+                <p className="mt-1">User: {invoiceData.user_email}</p>
+                <p className="-mt-1">Total Quantity: {invoiceData.total_qty}</p>
+                <div className="mt-5">
+                  <h4 className="font-semibold mb-2">Barang:</h4>
+                  <div className="overflow-x-auto">
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr>
+                          <th>No</th>
+                          <th>Item Name</th>
+                          <th>SKU</th>
+                          <th>Quantity</th>
+                          <th className="min-w-[250px]">Barcode SN</th> {/* Adjust width here */}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoiceData.items.map((item: any, idx: any) => (
+                          <tr key={idx}>
+                            <td>{idx + 1}</td>
+                            <td>{item.item_name}</td>
+                            <td>{item.sku}</td>
+                            <td>{item.total_qty}</td>
+                            <td>
+                              <ul className="list-disc pl-5">
+                                {item.serial_numbers.map((sn: any, snIdx: any) => (
+                                  <li
+                                    key={snIdx}
+                                    className={`${
+                                      barcodeSn === sn.barcode_sn ? 'text-blue-500 font-bold' : ''
+                                    }`}
+                                  >
+                                    {sn.barcode_sn}
+                                  </li>
+                                ))}
+                              </ul>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p>No data available.</p>
+            )}
+            <div className="flex justify-end mt-5">
+              <button
+                className="btn"
+                onClick={() => {
+                  const modal = document.getElementById('edit_invoice_modal') as HTMLDialogElement | null;
+                  if (modal) {
+                    modal.close();
+                  }
+                }}
+              >
+                Tutup
+              </button>
+              {/* <button
+                disabled={isEditingInvoice}
+                onClick={handleSubmitEditInvoice}
+                className={`btn btn-primary text-white mx-2 ${isEditingInvoice ? 'animate-pulse' : ''}`}
+              >
+                {isEditingInvoice ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button> */}
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button>close</button>
+          </form>
+        </dialog>
+
         {/* Drawer (Edit) */}
-        <div className="drawer drawer-end z-10">
-    <input id="edit_report" type="checkbox" className="drawer-toggle" />
-    <div className="drawer-side">
-      <label htmlFor="edit_report" aria-label="close sidebar" className="drawer-overlay"></label>
-      <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-        <h1 className="text-blue-700">Edit | {editSku}</h1>
-        <h1 className="text-gray-700">{namaBarang}</h1>
+        <div className="drawer drawer-end z-50">
+        <input id="edit_report" type="checkbox" className="drawer-toggle" />
+        <div className="drawer-side">
+        <label htmlFor="edit_report" aria-label="close sidebar" className="drawer-overlay"></label>
+        <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+        <div className="badge badge-neutral mb-2">Edit SN</div>
+        <h1 className="text-gray-700">{editSku} | {namaBarang}</h1>
 
         {/* Quantity Input */}
           {/* <div className="my-4">
@@ -439,7 +562,7 @@ const handleExportGrouping = async (): Promise<void> => {
             <label htmlFor="edit_report" className="btn btn-ghost btn-sm">Cancel</label>
             <button
               className="btn btn-primary btn-sm mx-2"
-              onClick={handleSaveEditReport}
+              onClick={handleSaveEditBarcodeSN}
               disabled={(quantity === originalQuantity && barcodeSn === originalBarcodeSn) || isSaving} // Disable button if unchanged or saving
             >
               {isSaving ? 'Saving...' : 'Save'}
@@ -474,7 +597,7 @@ const handleExportGrouping = async (): Promise<void> => {
                         onClick={toggleDropdownPerPage}
                       >
                         <span className="text-black dark:text-white">
-                          Per halaman: {perPage === 1000000000000 ? "Semua" : perPage} data
+                          Per halaman: {perPage === 500 ? "500" : perPage} data
                         </span>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -504,18 +627,18 @@ const handleExportGrouping = async (): Promise<void> => {
                             <a
                               onClick={() => {
                                 // Allow "Semua" only if skuSearch has more than 4 characters
-                                if (option === 1000000000000 && skuSearch && skuSearch.length > 4) {
+                                if (option === 500 && skuSearch && skuSearch.length > 4) {
                                   handlePerPageChange(option);
                                   setPerPageIsOpen(false); // Close dropdown on selection
                                 }
                                 // Allow other options unconditionally
-                                if (option !== 1000000000000) {
+                                if (option !== 500) {
                                   handlePerPageChange(option);
                                   setPerPageIsOpen(false); // Close dropdown on selection
                                 }
                               }}
                               className={`block px-4 py-2 rounded ${
-                                option === 1000000000000
+                                option === 500
                                   ? skuSearch && skuSearch.length > 4
                                     ? "hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                                     : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
@@ -526,7 +649,7 @@ const handleExportGrouping = async (): Promise<void> => {
                                   : ""
                               }`}
                             >
-                              {option === 1000000000000 ? "Semua" : option}
+                              {option === 500 ? "500" : option}
                             </a>
                           </li>
                         ))}
@@ -609,7 +732,7 @@ const handleExportGrouping = async (): Promise<void> => {
                         </label>
                         <ul
                           tabIndex={0}
-                          className={`dropdown-content menu p-2 shadow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-box w-full z-50 absolute mt-2 ${
+                          className={`dropdown-content menu p-2 shadow bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-box w-full z-10 absolute mt-2 ${
                             searchFilterisOpen ? "block" : "hidden"
                           }`}
                         >
@@ -687,7 +810,7 @@ const handleExportGrouping = async (): Promise<void> => {
                   {checkDuplicate ? 'Check Duplicate SN: ON' : 'Check Duplicate SN: OFF'}
                 </button>
               </div>
-            <table className="table">
+            <table className="table w-full">
               {/* Table Head */}
               <thead>
                 <tr>
@@ -717,13 +840,37 @@ const handleExportGrouping = async (): Promise<void> => {
                 scannedItems.map((item) => (
                   <tr
                     key={item.id}
-                    className={`hover:bg-base-200 dark:hover:bg-gray-700`}
+                    className={`hover:bg-base-200 dark:hover:bg-gray-700 group transition duration-150`}
                   >
                     <td>{convertToJakartaTime(item.created_at)}</td>
                     <td>{item.sku}</td>
                     <td>{item.master_item.nama_barang}</td>
                     <td>{item.invoice_number}</td>
-                    <td>{item.barcode_sn}</td>
+                    <td>
+                      <div className="flex items-center space-x-1 justify-between">
+                        <div>
+                          {item.barcode_sn?.length > 30 
+                          ? `${item.barcode_sn.slice(0, 30)}...` 
+                          : item.barcode_sn}
+                        </div>
+                        <div className="tooltip opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none transition-opacity duration-150" data-tip="Edit SN" style={{ minWidth: "24px", minHeight: "24px" }}>
+                        <label
+                            htmlFor="edit_report"
+                            onClick={() =>
+                              handleEditBarcodeSN(
+                                item.id,
+                                item.sku,
+                                item.qty,
+                                item.barcode_sn,
+                                item.master_item.nama_barang
+                              )
+                            }
+                          >
+                            <EditIcon />
+                          </label>
+                        </div>
+                      </div>
+                    </td>
                     <td>
                       <div className="flex items-center gap-3">
                         <div>
@@ -737,17 +884,17 @@ const handleExportGrouping = async (): Promise<void> => {
                     <th>
                       {hasUpdatePermission && (
                         <label
-                          htmlFor="edit_report"
                           className="btn btn-ghost btn-xs text-blue-500"
-                          onClick={() =>
-                            handleEdit(
-                              item.id,
-                              item.sku,
-                              item.qty,
-                              item.barcode_sn,
-                              item.master_item.nama_barang
-                            )
-                          }
+                          onClick={() => {
+                             handleEdit(
+                                item.id,
+                                item.sku,
+                                item.qty,
+                                item.barcode_sn,
+                                item.master_item.nama_barang,
+                                item.invoice_number
+                              )
+                          }}
                         >
                           Edit
                         </label>

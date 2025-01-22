@@ -104,7 +104,7 @@ const TipsReport = () => {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             ></path>
           </svg>
-          <span className="ml-2 flex-grow">Cari terlebih dahulu & Minimal sudah mengetik 5 huruf atau lebih, kemudian pilih 'Per halaman:', maka tombol 'Semua' akan aktif.</span>
+          <span className="ml-2 flex-grow">Cari terlebih dahulu & Minimal sudah mengetik 5 huruf atau lebih, kemudian pilih 'Per halaman:', maka tombol '500' akan aktif.</span>
           <button
             onClick={handleCloseSecondAlert}
             className="btn btn-sm btn-circle btn-ghost ml-2">

@@ -191,7 +191,7 @@ const CheckSales: React.FC = () => {
                       </td>
                       <td>
                         {item.serial_numbers.map((sn: any, index: number) => (
-                          <span key={index} className="badge badge-primary mx-1">
+                          <span key={index} className="badge badge-primary mx-1 mt-1">
                             {sn.barcode_sn}
                           </span>
                         ))}

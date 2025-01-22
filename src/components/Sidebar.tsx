@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 "use client";
 
 import React from 'react';
@@ -115,7 +116,7 @@ const Sidebar = () => {
               >
                 <li className="pl-6 mt-2">{renderNavItem('/scanned-item', 'Scan SN', ScannedItemIcon)}</li>
                 <li className="pl-6 mt-2">{renderNavItem('/inject-invoice', 'Inject Invoice', InjectInvoiceIcon)}</li>
-                <li className="pl-6 mt-2">{renderNavItem('/invoice-sn', 'Tambah SN Lama', CheckInvoiceIcon)}</li>
+                {/* <li className="pl-6 mt-2">{renderNavItem('/invoice-sn', 'Test', CheckInvoiceIcon)}</li> */}
               </ul>
             </li>
           )}
