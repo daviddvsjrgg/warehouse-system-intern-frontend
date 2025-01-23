@@ -843,7 +843,7 @@ const handleExportGrouping = async (): Promise<void> => {
                 <tr>
                   <th>Date</th>
                   <th>SKU</th>
-                  <th>Nama Barang</th>
+                  <th className='w-[250px]'>Nama Barang</th>
                   <th>Invoice Number</th>
                   <th>Barcode SN</th>
                   <th>User</th>
