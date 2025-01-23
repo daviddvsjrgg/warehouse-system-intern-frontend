@@ -428,7 +428,7 @@ const handleExportGrouping = async (): Promise<void> => {
       <dialog id="delete_modal" className="modal">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Yakin ingin menghapus data Scan ini?</h3>
-            <p className="mt-2">Invoice: {deleteInvoice}</p>
+            <p className="mt-2">Edit Invoice: {deleteInvoice}</p>
             <p className="">Barcode SN: {deleteBarcodeSN}</p>
             <p className="mt-3">SKU: {deleteSku}</p>
             <p className="">Nama Barang: {deleteNamaBarang}</p>
@@ -470,8 +470,13 @@ const handleExportGrouping = async (): Promise<void> => {
                 <p className="-mt-1 text-gray-500">{convertToJakartaTime(invoiceData.created_at)}</p>
                 <div className="mt-5">
                   <AddScannedByInvoice invoice_number={editInvoice} />
-                  <h3 className="font-bold text-lg">{invoiceData.invoice_number}</h3>
-                  <p className="-mt-1">Total Quantity: {invoiceData.total_qty}</p>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-bold text-lg">{invoiceData.invoice_number}</h3>
+                    <div className='flex items-center space-x-2'>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">| Total Barang: {invoiceData.items.length}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">| Total Quantity: {invoiceData.total_qty}</p>
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">Barang:</h4>
                     <button
