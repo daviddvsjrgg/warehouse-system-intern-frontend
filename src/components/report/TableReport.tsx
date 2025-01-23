@@ -468,10 +468,10 @@ const handleExportGrouping = async (): Promise<void> => {
             ) : invoiceData ? (
               <>
                 <p className="-mt-1 text-gray-500">{convertToJakartaTime(invoiceData.created_at)}</p>
-                <p className="mt-1">User: {invoiceData.user_name}</p>
-                <p className="-mt-1">Total Quantity: {invoiceData.total_qty}</p>
                 <div className="mt-5">
                   <AddScannedByInvoice invoice_number={editInvoice} />
+                  <h3 className="font-bold text-lg">{invoiceData.invoice_number}</h3>
+                  <p className="-mt-1">Total Quantity: {invoiceData.total_qty}</p>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">Barang:</h4>
                     <button
@@ -483,7 +483,7 @@ const handleExportGrouping = async (): Promise<void> => {
                     </button>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="table table-zebra w-full">
+                    <table className="table w-full">
                       <thead>
                         <tr>
                           <th>No</th>
@@ -495,7 +495,7 @@ const handleExportGrouping = async (): Promise<void> => {
                       </thead>
                       <tbody>
                         {invoiceData.items.map((item: any, idx: any) => (
-                          <tr key={idx}>
+                          <tr key={idx} className='hover:bg-base-200'>
                             <td>{idx + 1}</td>
                             <td>{item.item_name}</td>
                             <td>{item.sku}</td>
