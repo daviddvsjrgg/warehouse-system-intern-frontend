@@ -2,13 +2,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem, getTotalItemScannedItems } from '@/api/scanned-item/scanned-item';
 import { convertToJakartaTime } from '@/utils/dateUtils';
-import { ExportData, GroupedItem, Item } from '@/utils/interface/excelGroupingInterface';
+import { ExportData, GroupedItem, Item } from '@/types/excelGroupingInterface';
 import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx';
 import { fetchRolesPermissions } from '@/api/user-management/roles';
 import { FeatureDisabled } from '@/components/alerts/feature-disabled';
 import EditIcon from '@/app/icon/EditIcon';
 import fetchInvoiceByNumber from '@/api/invoice/invoice';
+import AddScannedByInvoice from '@/components/report/AddScannedByInvoice';
 
 
 const TableReport: React.FC = () => {
@@ -49,6 +50,16 @@ const TableReport: React.FC = () => {
   const [isExactSearch, setIsExactSearch] = useState(true);
   const [invoiceData, setInvoiceData] = useState<any | null>(null);
   const [isEditingLoading, setIsEditingLoading] = useState(false);
+
+  const refreshTableData = async () => {
+    // Assuming `fetchInvoiceData` fetches and updates the invoice data
+    const response = await fetchInvoiceByNumber(editInvoice);
+      if (response && response.success) {
+        setInvoiceData(response.data.data[0]); // Assuming single invoice
+      } else {
+        setError('Failed to fetch invoice data.');
+      }
+  };
 
   // Permission =================================================================
   const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
@@ -450,10 +461,19 @@ const handleExportGrouping = async (): Promise<void> => {
             ) : invoiceData ? (
               <>
                 <p className="-mt-1 text-gray-500">{convertToJakartaTime(invoiceData.created_at)}</p>
-                <p className="mt-1">User: {invoiceData.user_email}</p>
+                <p className="mt-1">User: {invoiceData.user_name}</p>
                 <p className="-mt-1">Total Quantity: {invoiceData.total_qty}</p>
                 <div className="mt-5">
-                  <h4 className="font-semibold mb-2">Barang:</h4>
+                  <AddScannedByInvoice invoice_number={editInvoice} />
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">Barang:</h4>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => refreshTableData()}
+                    >
+                      Refresh
+                    </button>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="table table-zebra w-full">
                       <thead>
@@ -508,19 +528,13 @@ const handleExportGrouping = async (): Promise<void> => {
               >
                 Tutup
               </button>
-              {/* <button
-                disabled={isEditingInvoice}
-                onClick={handleSubmitEditInvoice}
-                className={`btn btn-primary text-white mx-2 ${isEditingInvoice ? 'animate-pulse' : ''}`}
-              >
-                {isEditingInvoice ? 'Menyimpan...' : 'Simpan Perubahan'}
-              </button> */}
             </div>
           </div>
           <form method="dialog" className="modal-backdrop">
             <button>close</button>
           </form>
         </dialog>
+
 
         {/* Drawer (Edit) */}
         <div className="drawer drawer-end z-50">

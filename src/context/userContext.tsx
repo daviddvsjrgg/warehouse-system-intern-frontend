@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { getUser } from '@/api/user/user';
-import { User } from '@/utils/interface/userInterface';
+import { User } from '@/types/userInterface';
 
 interface UserContextType {
   user: User | null;

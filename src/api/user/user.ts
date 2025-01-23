@@ -1,6 +1,6 @@
 import { parseCookies } from 'nookies';
 import api from '@/services/axiosInstance';
-import { User } from '@/utils/interface/userInterface';
+import { User } from '@/types/userInterface';
 
 let cachedUser: User | null = null; // Cache variable to store the user data
 

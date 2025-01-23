@@ -4,6 +4,8 @@ import { parseCookies } from 'nookies';
 // Define types for serial numbers, items, and invoice
 type SerialNumber = {
     barcode_sn: string;
+    created_at: string;
+    updated_at: string;
   };
   
   type Item = {
@@ -17,6 +19,7 @@ type SerialNumber = {
     invoice_number: string;
     total_qty: number;
     items: Item[];
+    user_name: string;
     user_email: string;
     created_at: string;
     updated_at: string;
