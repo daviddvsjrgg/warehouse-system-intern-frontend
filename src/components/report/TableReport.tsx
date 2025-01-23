@@ -50,15 +50,22 @@ const TableReport: React.FC = () => {
   const [isExactSearch, setIsExactSearch] = useState(true);
   const [invoiceData, setInvoiceData] = useState<any | null>(null);
   const [isEditingLoading, setIsEditingLoading] = useState(false);
+  const [isRefreshLoading, setIsRefreshLoading] = useState(false);
 
   const refreshTableData = async () => {
-    // Assuming `fetchInvoiceData` fetches and updates the invoice data
-    const response = await fetchInvoiceByNumber(editInvoice);
+    try {
+      setIsRefreshLoading(true); // Start loading state
+      const response = await fetchInvoiceByNumber(editInvoice);
       if (response && response.success) {
         setInvoiceData(response.data.data[0]); // Assuming single invoice
       } else {
         setError('Failed to fetch invoice data.');
       }
+    } catch (error) {
+      setError('An unexpected error occurred.');
+    } finally {
+      setIsRefreshLoading(false); // Stop loading state
+    }
   };
 
   // Permission =================================================================
@@ -468,10 +475,11 @@ const handleExportGrouping = async (): Promise<void> => {
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">Barang:</h4>
                     <button
-                      className="btn btn-sm btn-primary"
+                      className={`btn btn-sm btn-primary ${isRefreshLoading ? 'disabled animate-pulse' : ''}`}
                       onClick={() => refreshTableData()}
+                      disabled={isRefreshLoading} // Ensures it is programmatically disabled
                     >
-                      Refresh
+                      {isRefreshLoading ? 'Refreshing...' : 'Refresh'}
                     </button>
                   </div>
                   <div className="overflow-x-auto">
@@ -498,7 +506,7 @@ const handleExportGrouping = async (): Promise<void> => {
                                   <li
                                     key={snIdx}
                                     className={`${
-                                      barcodeSn === sn.barcode_sn ? 'text-blue-500 font-bold' : ''
+                                      barcodeSn === sn.barcode_sn ? 'text-blue-400 font-bold' : ''
                                     }`}
                                   >
                                     {sn.barcode_sn}

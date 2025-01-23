@@ -185,7 +185,7 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
       // Update state
       setItemList((prevList) => {
         const updatedList = [...prevList, newItem];
-        localStorage.setItem('scannedItems', JSON.stringify(updatedList));
+        localStorage.setItem('scannedItemsByInvoice', JSON.stringify(updatedList));
   
         // Set the last added barcode for scrolling
         setLastAddedBarcode(barcodeSN);
@@ -214,7 +214,7 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
   }, [lastAddedBarcode]); // Trigger when `lastAddedBarcode` changes
 
   useEffect(() => {
-    const savedItems = localStorage.getItem('scannedItems');
+    const savedItems = localStorage.getItem('scannedItemsByInvoice');
     if (savedItems) {
       setItemList(JSON.parse(savedItems));
     }
@@ -296,7 +296,7 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
       setSuccessMessage('Barang berhasil discan!');
       setInvoiceNumber('');
       setItemList([]);
-      localStorage.removeItem('scannedItems');
+      localStorage.removeItem('scannedItemsByInvoice');
       setSelectedItem('Cari Barang');
       setSelectedItemId(null);
       setBarcodeSN('');
@@ -333,7 +333,7 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
   // Function to clear all items
   const handleClearAll = () => {
     setItemList([]); // Clear all items from itemList
-    localStorage.removeItem('scannedItems');
+    localStorage.removeItem('scannedItemsByInvoice');
     setShowClearAllModal(false); // Close modal
   };
 
@@ -351,7 +351,7 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
       const updatedList = prevList.filter((item) => item.barcode_sn !== selectedBarcode);
   
       // Update local storage
-      localStorage.setItem('scannedItems', JSON.stringify(updatedList));
+      localStorage.setItem('scannedItemsByInvoice', JSON.stringify(updatedList));
   
       return updatedList;
     });
@@ -920,10 +920,11 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
             <div className="relative">
             {/* Button to open the modal */}
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="btn btn-primary w-1/2"
+              onClick={handleSubmit}
+              className={`btn btn-primary w-1/2 ${loading ? 'animate-pulse' : ''}`}
+              disabled={loading}
             >
-              Submit
+              {loading ? 'Submitting...' : 'Submit'}
             </button>
             {error.submitError && (
               <div
