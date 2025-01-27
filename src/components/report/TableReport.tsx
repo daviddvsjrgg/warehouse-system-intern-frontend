@@ -508,14 +508,10 @@ const handleExportGrouping = async (): Promise<void> => {
         return; // Exit early
       }
 
-      // Update the scanned item for all invoices
-      await updateScannedItemAllInvoice(editInvoice, editTempInvoice);
-
     } catch (error) {
       setMessageSaveAllInvoice('An unexpected error occurred.');
     } finally {
       setIsRefreshLoading(false);
-      // setEditInvoice(editTempInvoice); 
     }
   };
 
