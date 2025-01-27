@@ -54,6 +54,7 @@ const TableReport: React.FC = () => {
   const [invoiceDataPreview, setInvoiceDataPreview] = useState<any | null>(null);
   const [isEditingLoading, setIsEditingLoading] = useState(false);
   const [isRefreshLoading, setIsRefreshLoading] = useState(false);
+  const [yakinEditAllInvoiceButton, setYakinEditAllInvoiceButton] = useState(false);
   const [activeTab, setActiveTab] = useState("tab1");
   const [editAllInvoice, setEditAllInvoice] = useState(false);
   const [alreadyCheckAllInvoice, setAlreadyCheckAllInvoice] = useState(false);
@@ -110,7 +111,7 @@ const TableReport: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate, selectedFilter, isExactSearch]);
+  }, [currentPage, perPage, debouncedSkuSearch, startDate, endDate, checkDuplicate, selectedFilter, isExactSearch, yakinEditAllInvoiceButton]);
 
   // Effect to handle search and change perPage value
   useEffect(() => {
@@ -521,6 +522,7 @@ const handleExportGrouping = async (): Promise<void> => {
   const handleYakinEditAllInvoice = async () => {
     try {
       setIsRefreshLoading(true); // Start loading state
+      setYakinEditAllInvoiceButton(true);
 
       // Update the scanned item for all invoices
       await updateScannedItemAllInvoice(editInvoice, editTempInvoice);
@@ -534,6 +536,7 @@ const handleExportGrouping = async (): Promise<void> => {
       setMessageSaveAllInvoice('An unexpected error occurred.');
     } finally {
       setIsRefreshLoading(false);
+      setYakinEditAllInvoiceButton(false);
       setEditInvoice(editTempInvoice); 
       setAlreadyCheckAllInvoice(false);
       setMessageSaveAllInvoice('Note: Invoice baru akan dibuat jika belum ada, jika ada maka akan digabungkan.');
@@ -542,7 +545,7 @@ const handleExportGrouping = async (): Promise<void> => {
       setSuccessMessageEditAllInvoice("Invoice berhasil diubah.")
       setTimeout(() => {
         setSuccessMessageEditAllInvoice("")
-      }, 3000);
+      }, 6000);
     }
   }
 
@@ -662,13 +665,13 @@ const handleExportGrouping = async (): Promise<void> => {
                         <div className="overflow-x-auto">
                           <table className="table w-full">
                             <thead>
-                              <tr>
-                                <th>No</th>
-                                <th>Nama Barang</th>
-                                <th>SKU</th>
-                                <th>Quantity</th>
-                                <th className="min-w-[250px]">Barcode SN</th> {/* Adjust width here */}
-                              </tr>
+                            <tr>
+                              <th className="w-[50px]">No</th>
+                              <th className="w-[100px]">Nama Barang</th>
+                              <th className="w-[50px]">SKU</th>
+                              <th className="w-[50px]">Quantity</th>
+                              <th className="w-[50px]">Barcode SN</th> {/* Adjust width here */}
+                            </tr>
                             </thead>
                             <tbody>
                               {invoiceDataPreview.items.map((item: any, idx: any) => (
@@ -727,8 +730,8 @@ const handleExportGrouping = async (): Promise<void> => {
                       {alreadyCheckAllInvoice && (
                         <>
                         <div className='flex mt-2'>
-                          <button onClick={handleYakinEditAllInvoice} className={`btn btn-sm btn-primary text-white block ${isRefreshLoading ? 'animate-pulse' : ''}`} disabled={editTempInvoice === editInvoice || isRefreshLoading}>
-                            {isRefreshLoading ? "Mengubah..." : "Yakin"}
+                          <button onClick={handleYakinEditAllInvoice} className={`btn btn-sm btn-primary text-white block ${yakinEditAllInvoiceButton ? 'animate-pulse' : ''}`} disabled={editTempInvoice === editInvoice || yakinEditAllInvoiceButton}>
+                            {yakinEditAllInvoiceButton ? "Mengubah..." : "Yakin"}
                           </button>
                           <button onClick={() => {
                             setAlreadyCheckAllInvoice(false)
