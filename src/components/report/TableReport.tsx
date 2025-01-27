@@ -60,7 +60,14 @@ const TableReport: React.FC = () => {
   const [alreadyCheckAllInvoice, setAlreadyCheckAllInvoice] = useState(false);
   const [successMessageEditAllInvoice, setSuccessMessageEditAllInvoice] = useState('');
   
-
+  // Permission =================================================================
+  const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
+  const [hasReadPermission, setHasReadPermission] = useState(false);
+  const [hasExportPermission, setHasExportPermission] = useState(false);
+  const [hasDeletePermission, setHasDeletePermission] = useState(false);
+  
+  const [rolesFetched, setRolesFetched] = useState(false); // State to indicate roles fetching completion
+  
   const refreshTableData = async () => {
     try {
       setIsRefreshLoading(true); // Start loading state
@@ -76,16 +83,6 @@ const TableReport: React.FC = () => {
       setIsRefreshLoading(false); // Stop loading state
     }
   };
-
-  // Permission =================================================================
-  const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
-  const [hasReadPermission, setHasReadPermission] = useState(false);
-  const [hasExportPermission, setHasExportPermission] = useState(false);
-  const [hasDeletePermission, setHasDeletePermission] = useState(false);
-
-  const [rolesFetched, setRolesFetched] = useState(false); // State to indicate roles fetching completion
-  
-
 
   const toggleDropdownSearchFilter = () => setSearchFilterIsOpen(!searchFilterisOpen);
 
@@ -624,7 +621,7 @@ const handleExportGrouping = async (): Promise<void> => {
                       <span className="text-yellow-500 ml-1">
                          Semua 'SN' akan terubah dengan 'Invoice' ini.
                       </span>
-                      <div className="flex justify-end gap-2 mt-4">
+                      <div className="flex justify-end gap-2 mt-4 mb-4">
                        <input
                         type="text"
                         className="input input-md input-bordered w-full"
@@ -696,26 +693,8 @@ const handleExportGrouping = async (): Promise<void> => {
                           </table>
                         </div>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="table w-full">
-                            <thead>
-                              <tr>
-                                <th>No</th>
-                                <th>Nama Barang</th>
-                                <th>SKU</th>
-                                <th>Quantity</th>
-                                <th className="min-w-[250px]">Barcode SN</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td colSpan={5} className="text-center">
-                                  Tidak ada data.
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
+                       <>
+                       </>
                       )}
                       <span className="text-info">
                         {messageSaveAllInvoice}
@@ -766,15 +745,14 @@ const handleExportGrouping = async (): Promise<void> => {
                     </div>
                   </div>
                   <div className='divider divider-info'></div>
+                  <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <h3 className="font-bold text-lg">{invoiceData.invoice_number}</h3>
+                    <h3 className="font-bold text-lg">Invoice: {invoiceData.invoice_number}</h3>
                     <div className='flex items-center space-x-2'>
                       <p className="text-sm text-gray-500 dark:text-gray-300">| Total Barang: {invoiceData.items.length}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-300">| Total Quantity: {invoiceData.total_qty}</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">Barang:</h4>
                     <button
                       className={`btn btn-sm btn-primary ${isRefreshLoading ? 'disabled animate-pulse' : ''}`}
                       onClick={() => refreshTableData()}
