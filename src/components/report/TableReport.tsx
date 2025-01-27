@@ -1,6 +1,6 @@
 /* eslint-disable */ 
 import React, { useEffect, useState, useCallback } from 'react';
-import { fetchScannedItems, FetchScannedItem, updateScannedItem, deleteScannedItem, getTotalItemScannedItems } from '@/api/scanned-item/scanned-item';
+import { fetchScannedItems, FetchScannedItem, updateScannedItemSN, updateScannedItemInvoice, deleteScannedItem, getTotalItemScannedItems, updateScannedItemAllInvoice } from '@/api/scanned-item/scanned-item';
 import { convertToJakartaTime } from '@/utils/dateUtils';
 import { ExportData, GroupedItem, Item } from '@/types/excelGroupingInterface';
 import useDebounce from '@/hooks/useDebounce';
@@ -16,13 +16,15 @@ const TableReport: React.FC = () => {
   const [scannedItems, setScannedItems] = useState<FetchScannedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [messageSaveAllInvoice, setMessageSaveAllInvoice] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [skuSearch, setSkuSearch] = useState<string>('');
   const [editSku, setEditSku] = useState<string>('');
   const [editInvoice, setEditInvoice] = useState<string>('');
+  const [editTempInvoice, setEditTempInvoice] = useState<string>('');
+  const [editOriginalInvoice, setEditOriginalInvoice] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isEditingInvoice, setIsEditingInvoice] = useState(false);
   const [deleteReportId, setDeleteReportId] = useState<number>(0);
   const [deleteSku, setDeleteSku] = useState<string | null>(null);
   const [deleteBarcodeSN, setDeleteBarcodeSN] = useState<string | null>(null);
@@ -49,8 +51,14 @@ const TableReport: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>('Semua'); // Selected option
   const [isExactSearch, setIsExactSearch] = useState(true);
   const [invoiceData, setInvoiceData] = useState<any | null>(null);
+  const [invoiceDataPreview, setInvoiceDataPreview] = useState<any | null>(null);
   const [isEditingLoading, setIsEditingLoading] = useState(false);
   const [isRefreshLoading, setIsRefreshLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("tab1");
+  const [editAllInvoice, setEditAllInvoice] = useState(false);
+  const [alreadyCheckAllInvoice, setAlreadyCheckAllInvoice] = useState(false);
+  const [successMessageEditAllInvoice, setSuccessMessageEditAllInvoice] = useState('');
+  
 
   const refreshTableData = async () => {
     try {
@@ -163,12 +171,17 @@ useEffect(() => {
   }
 
   const handleEdit = async (id: number, sku: string, qty: number, barcode: string, nama_barang: string, invoice_number: string) => {
+    setAlreadyCheckAllInvoice(false);
+    setEditAllInvoice(false);
+    setMessageSaveAllInvoice('Note: Invoice baru akan dibuat jika belum ada, jika ada maka akan digabungkan.');
+    setInvoiceDataPreview([]);
     setNamaBarang(nama_barang);
     setEditSku(sku);
     setEditId(id);
     setQuantity(qty);
     setBarcodeSn(barcode);
     setEditInvoice(invoice_number);
+    setEditTempInvoice(invoice_number);
     setSaveSuccess(null); // Reset success message
     setValidationError(null);
     // Open the modal
@@ -200,6 +213,20 @@ useEffect(() => {
     setOriginalQuantity(qty); // Set original quantity for comparison
     setBarcodeSn(barcode);
     setOriginalBarcodeSn(barcode); // Set original barcode for comparison
+    setSaveSuccess(null); // Reset success message
+    setValidationError(null);
+  };
+
+  const handleEditInvoice = (id: number, sku: string, qty: number, barcode: string, nama_barang: string, invoice_number: string) => {
+    setNamaBarang(nama_barang);
+    setEditSku(sku);
+    setEditId(id);
+    setQuantity(qty);
+    setOriginalQuantity(qty); // Set original quantity for comparison
+    setBarcodeSn(barcode);
+    setOriginalBarcodeSn(barcode); // Set original barcode for comparison
+    setEditInvoice(invoice_number)
+    setEditOriginalInvoice(invoice_number)
     setSaveSuccess(null); // Reset success message
     setValidationError(null);
   };
@@ -242,7 +269,7 @@ useEffect(() => {
         }
 
         // Proceed with saving if no duplicates are found
-        await updateScannedItem(editId, quantity, barcodeSn);
+        await updateScannedItemSN(editId, quantity, barcodeSn);
 
         // Update the specific item in the list
         setScannedItems((prevItems) =>
@@ -254,6 +281,41 @@ useEffect(() => {
         setSaveSuccess(true); // Show success message
         setOriginalQuantity(quantity); // Update original values
         setOriginalBarcodeSn(barcodeSn);
+        setValidationError('');
+    } catch (error) {
+        console.error(error);
+        setSaveSuccess(false); // Show error message
+    } finally {
+        setIsSaving(false);
+    }
+};
+
+  const handleSaveEditInvoice = async () => {
+    // Validate inputs
+    if (
+        editId === null) {
+        setValidationError("Ensure all fields are correctly updated and valid.");
+        setSaveSuccess(false);
+        return;
+    }
+
+    setIsSaving(true);
+    setSaveSuccess(null);
+
+    try {
+        // Proceed with saving if no duplicates are found
+        await updateScannedItemInvoice(editId, editInvoice);
+
+        // Update the specific item in the list
+        setScannedItems((prevItems) =>
+            prevItems.map((item) =>
+                item.id === editId ? { ...item, invoice_number: editInvoice } : item
+            )
+        );
+
+        setSaveSuccess(true); // Show success message
+        setOriginalQuantity(quantity); // Update original values
+        setEditOriginalInvoice(editInvoice);
         setValidationError('');
     } catch (error) {
         console.error(error);
@@ -413,9 +475,77 @@ const handleExportGrouping = async (): Promise<void> => {
     // Add logic here to handle perPage change, such as fetching data
   };
 
-  const handleSubmitEditInvoice = () => {
-    console.log("submit data")
+  const handleCheckEditAllInvoice = async () => {
+    try {
+      setIsRefreshLoading(true); // Start loading state
+
+      // Check if the invoice exists
+      const checkResponse = await fetchInvoiceByNumber(editTempInvoice);
+      if (
+        !checkResponse || 
+        !checkResponse.success || 
+        !checkResponse.data || 
+        checkResponse.data.data.length === 0 // Accessing the `data` array inside `data`
+      ) {
+        // Case when the invoice does not exist
+        setInvoiceDataPreview([]);
+        setMessageSaveAllInvoice('Invoice belum ada. Yakin ingin mengubah? ' + editInvoice + " akan berubah ke: " + editTempInvoice);
+
+        setAlreadyCheckAllInvoice(true)
+        return; // Exit early
+      } else {
+        // Case when the invoice exists
+        setMessageSaveAllInvoice('Invoice sudah ada. Yakin ingin menggabungkan? ' + editInvoice + ' akan digabungkan ke: ' + editTempInvoice + '.');
+        const response = await fetchInvoiceByNumber(editTempInvoice);
+        if (response && response.success) {
+          setInvoiceDataPreview(response.data.data[0]); // Assuming a single invoice
+        } else {
+          setMessageSaveAllInvoice('Failed to fetch invoice data.');
+        }
+
+        setAlreadyCheckAllInvoice(true)
+        return; // Exit early
+      }
+
+      // Update the scanned item for all invoices
+      await updateScannedItemAllInvoice(editInvoice, editTempInvoice);
+
+    } catch (error) {
+      setMessageSaveAllInvoice('An unexpected error occurred.');
+    } finally {
+      setIsRefreshLoading(false);
+      // setEditInvoice(editTempInvoice); 
+    }
+  };
+
+  const handleYakinEditAllInvoice = async () => {
+    try {
+      setIsRefreshLoading(true); // Start loading state
+
+      // Update the scanned item for all invoices
+      await updateScannedItemAllInvoice(editInvoice, editTempInvoice);
+      const response = await fetchInvoiceByNumber(editTempInvoice);
+        if (response && response.success) {
+          setInvoiceData(response.data.data[0]); // Assuming a single invoice
+        } else {
+          setMessageSaveAllInvoice('Failed to fetch invoice data.');
+        }
+    } catch (error) {
+      setMessageSaveAllInvoice('An unexpected error occurred.');
+    } finally {
+      setIsRefreshLoading(false);
+      setEditInvoice(editTempInvoice); 
+      setAlreadyCheckAllInvoice(false);
+      setMessageSaveAllInvoice('Note: Invoice baru akan dibuat jika belum ada, jika ada maka akan digabungkan.');
+      setInvoiceDataPreview({});
+      setEditAllInvoice(false);
+      setSuccessMessageEditAllInvoice("Invoice berhasil diubah.")
+      setTimeout(() => {
+        setSuccessMessageEditAllInvoice("")
+      }, 3000);
+    }
   }
+
 
 
   const toggleDropdownPerPage = () => {
@@ -428,7 +558,7 @@ const handleExportGrouping = async (): Promise<void> => {
       <dialog id="delete_modal" className="modal">
           <div className="modal-box">
             <h3 className="font-bold text-lg">Yakin ingin menghapus data Scan ini?</h3>
-            <p className="mt-2">Edit Invoice: {deleteInvoice}</p>
+            <p className="mt-2">Invoice: {deleteInvoice}</p>
             <p className="">Barcode SN: {deleteBarcodeSN}</p>
             <p className="mt-3">SKU: {deleteSku}</p>
             <p className="">Nama Barang: {deleteNamaBarang}</p>
@@ -469,7 +599,174 @@ const handleExportGrouping = async (): Promise<void> => {
               <>
                 <p className="-mt-1 text-gray-500">{convertToJakartaTime(invoiceData.created_at)}</p>
                 <div className="mt-5">
-                  <AddScannedByInvoice invoice_number={editInvoice} />
+                  <div role="tablist" className="tabs tabs-lifted">
+                    {/* Tab 1 */}
+                    <input
+                      type="radio"
+                      name="my_tabs_2"
+                      role="tab"
+                      className={`tab ${
+                        activeTab === "tab1"
+                          ? "tab-active text-white [--tab-bg:blue] [--tab-border-color:blue-dark] dark:[--tab-bg:blue-dark]"
+                          : ""
+                      }`}
+                      aria-label="Ubah Invoice Semua Barang"
+                      onClick={() => setActiveTab("tab1")}
+                    />
+                    <div
+                      role="tabpanel"
+                      className={`tab-content bg-base-100 border-base-300 rounded-box p-6 ${
+                        activeTab === "tab1" ? "block" : "hidden"
+                      }`}
+                    >
+                      <span className="text-yellow-600">
+                        Warning:
+                      </span>
+                      <span className="text-yellow-500 ml-1">
+                         Semua 'SN' akan terubah dengan 'Invoice' ini.
+                      </span>
+                      <div className="flex justify-end gap-2 mt-4">
+                       <input
+                        type="text"
+                        className="input input-md input-bordered w-full"
+                        value={editTempInvoice}
+                        disabled={!editAllInvoice}
+                        onChange={(e) => {
+                          setEditTempInvoice(e.target.value)
+                          setAlreadyCheckAllInvoice(false);
+                        }}
+                      />
+                        {editAllInvoice ? (
+                          <>
+                            <button onClick={() => {
+                              setEditTempInvoice(editInvoice)
+                              setEditAllInvoice(false)
+                              setMessageSaveAllInvoice('Note: Invoice baru akan dibuat jika belum ada, jika ada maka akan digabungkan.');
+                              setInvoiceDataPreview([])
+                              }} className="btn btn-md btn-error text-white">
+                              Batalkan
+                            </button>
+                            <button onClick={handleCheckEditAllInvoice} className="btn btn-md btn-success text-white" disabled={editTempInvoice === editInvoice}>
+                              Cek
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditAllInvoice(true)} className="btn btn-md btn-primary text-white">
+                              Ubah
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {invoiceDataPreview?.items?.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="table w-full">
+                            <thead>
+                              <tr>
+                                <th>No</th>
+                                <th>Nama Barang</th>
+                                <th>SKU</th>
+                                <th>Quantity</th>
+                                <th className="min-w-[250px]">Barcode SN</th> {/* Adjust width here */}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {invoiceDataPreview.items.map((item: any, idx: any) => (
+                                <tr key={idx} className="hover:bg-base-200">
+                                  <td>{idx + 1}</td>
+                                  <td>{item.item_name}</td>
+                                  <td>{item.sku}</td>
+                                  <td>{item.total_qty}</td>
+                                  <td>
+                                    <ul className="list-disc pl-5">
+                                      {item.serial_numbers.map((sn: any, snIdx: any) => (
+                                        <li
+                                          key={snIdx}
+                                          className={`${
+                                            barcodeSn === sn.barcode_sn ? 'text-blue-400 font-bold' : ''
+                                          }`}
+                                        >
+                                          {sn.barcode_sn}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="table w-full">
+                            <thead>
+                              <tr>
+                                <th>No</th>
+                                <th>Nama Barang</th>
+                                <th>SKU</th>
+                                <th>Quantity</th>
+                                <th className="min-w-[250px]">Barcode SN</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td colSpan={5} className="text-center">
+                                  Tidak ada data.
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <span className="text-info">
+                        {messageSaveAllInvoice}
+                      </span>
+                      <span className="text-success block">
+                        {successMessageEditAllInvoice}
+                      </span>
+                      {alreadyCheckAllInvoice && (
+                        <>
+                        <div className='flex mt-2'>
+                          <button onClick={handleYakinEditAllInvoice} className={`btn btn-sm btn-primary text-white block ${isRefreshLoading ? 'animate-pulse' : ''}`} disabled={editTempInvoice === editInvoice || isRefreshLoading}>
+                            {isRefreshLoading ? "Mengubah..." : "Yakin"}
+                          </button>
+                          <button onClick={() => {
+                            setAlreadyCheckAllInvoice(false)
+                            setEditTempInvoice(editInvoice)
+                            setEditAllInvoice(false)
+                            setMessageSaveAllInvoice('Note: Invoice baru akan dibuat jika belum ada, jika ada maka akan digabungkan.');
+                            setInvoiceDataPreview([])
+                            }} className="btn btn-sm btn-error text-white block ml-2">
+                            Tidak
+                          </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Tab 2 */}
+                    <input
+                      type="radio"
+                      name="my_tabs_2"
+                      role="tab"
+                      className={`tab ${
+                        activeTab === "tab2"
+                          ? "tab-active text-white [--tab-bg:blue] [--tab-border-color:blue-dark] dark:[--tab-bg:blue-dark]"
+                          : ""
+                      }`}
+                      aria-label="Tambah SN ke Invoice"
+                      onClick={() => setActiveTab("tab2")}
+                    />
+                    <div
+                      role="tabpanel"
+                      className={`tab-content bg-base-100 border-base-300 rounded-box p-6 ${
+                        activeTab === "tab2" ? "block" : "hidden"
+                      }`}
+                    >
+                      <AddScannedByInvoice invoice_number={editInvoice} />
+                    </div>
+                  </div>
+                  <div className='divider divider-info'></div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-bold text-lg">{invoiceData.invoice_number}</h3>
                     <div className='flex items-center space-x-2'>
@@ -492,7 +789,7 @@ const handleExportGrouping = async (): Promise<void> => {
                       <thead>
                         <tr>
                           <th>No</th>
-                          <th>Item Name</th>
+                          <th>Nama Barang</th>
                           <th>SKU</th>
                           <th>Quantity</th>
                           <th className="min-w-[250px]">Barcode SN</th> {/* Adjust width here */}
@@ -527,7 +824,7 @@ const handleExportGrouping = async (): Promise<void> => {
                 </div>
               </>
             ) : (
-              <p>No data available.</p>
+              <p>Tidak ada data / Invoice sudah diganti</p>
             )}
             <div className="flex justify-end mt-5">
               <button
@@ -549,63 +846,121 @@ const handleExportGrouping = async (): Promise<void> => {
         </dialog>
 
 
-        {/* Drawer (Edit) */}
-        <div className="drawer drawer-end z-50">
-        <input id="edit_report" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-side">
-        <label htmlFor="edit_report" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-        <div className="badge badge-neutral mb-2">Edit SN</div>
-        <h1 className="text-gray-700">{editSku} | {namaBarang}</h1>
+      {/* Drawer (Inovice Edit) */}
+      <div className="drawer drawer-end z-50">
+        <input id="edit_invoice_report" type="checkbox" className="drawer-toggle" />
+          <div className="drawer-side">
+          <label htmlFor="edit_invoice_report" aria-label="close sidebar" className="drawer-overlay"></label>
+          <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+          <div className="badge badge-neutral mb-2">Edit Invoice</div>
+          <h1 className="text-gray-700">{editSku} | {namaBarang}</h1>
 
-        {/* Quantity Input */}
-          {/* <div className="my-4">
-            <label htmlFor="quantity" className="text-sm font-medium mb-2 block">Quantity</label>
-            <input
-              type="number"
-              id="quantity"
-              placeholder="Enter quantity"
-              className="input input-bordered w-3/4"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value))}
-            />
-          </div> */}
+          {/* Quantity Input */}
+            {/* <div className="my-4">
+              <label htmlFor="quantity" className="text-sm font-medium mb-2 block">Quantity</label>
+              <input
+                type="number"
+                id="quantity"
+                placeholder="Enter quantity"
+                className="input input-bordered w-3/4"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value))}
+              />
+            </div> */}
 
-          {/* Barcode SN Input */}
-          <div className="my-2">
-            <label htmlFor="barcode_sn" className="text-sm font-medium mb-2 block">Barcode SN</label>
-            <input
-              type="text"
-              id="barcode_sn"
-              placeholder="Enter Barcode Serial Number"
-              className="input input-bordered w-3/4"
-              value={barcodeSn}
-              onChange={(e) => setBarcodeSn(e.target.value)}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="">
-            <label htmlFor="edit_report" className="btn btn-ghost btn-sm">Cancel</label>
-            <button
-              className="btn btn-primary btn-sm mx-2"
-              onClick={handleSaveEditBarcodeSN}
-              disabled={(quantity === originalQuantity && barcodeSn === originalBarcodeSn) || isSaving} // Disable button if unchanged or saving
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-
-          {/* Success/Error Message */}
-          {saveSuccess !== null && (
-            <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
-              {saveSuccess ? 'Saved successfully!' : ''}
+            {/* Barcode SN Input */}
+            <div className="my-2">
+              <label htmlFor="barcode_sn" className="text-sm font-medium mb-2 block">Invoice</label>
+              <input
+                type="text"
+                id="invoice"
+                placeholder="Enter Invoice"
+                className="input input-bordered w-3/4"
+                value={editInvoice}
+                onChange={(e) => setEditInvoice(e.target.value)}
+              />
             </div>
-          )}
-          {validationError && <div className="text-red-500">{validationError}</div>}
+
+            {/* Actions */}
+            <div className="">
+              <label htmlFor="edit_invoice_report" className="btn btn-ghost btn-sm">Cancel</label>
+              <button
+                className="btn btn-primary btn-sm mx-2"
+                onClick={handleSaveEditInvoice}
+                disabled={(editInvoice === editOriginalInvoice) || isSaving} // Disable button if unchanged or saving
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+
+            {/* Success/Error Message */}
+            {saveSuccess !== null && (
+              <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
+                {saveSuccess ? 'Saved successfully!' : ''}
+              </div>
+            )}
+            {validationError && <div className="text-red-500">{validationError}</div>}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Drawer (Invoice Edit) */}
+      <div className="drawer drawer-end z-50">
+        <input id="edit_sn_report" type="checkbox" className="drawer-toggle" />
+          <div className="drawer-side">
+          <label htmlFor="edit_sn_report" aria-label="close sidebar" className="drawer-overlay"></label>
+          <div className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+          <div className="badge badge-neutral mb-2">Edit SN</div>
+          <h1 className="text-gray-700">{editSku} | {namaBarang}</h1>
+
+          {/* Quantity Input */}
+            {/* <div className="my-4">
+              <label htmlFor="quantity" className="text-sm font-medium mb-2 block">Quantity</label>
+              <input
+                type="number"
+                id="quantity"
+                placeholder="Enter quantity"
+                className="input input-bordered w-3/4"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value))}
+              />
+            </div> */}
+
+            {/* Barcode SN Input */}
+            <div className="my-2">
+              <label htmlFor="barcode_sn" className="text-sm font-medium mb-2 block">Barcode SN</label>
+              <input
+                type="text"
+                id="barcode_sn"
+                placeholder="Enter Barcode Serial Number"
+                className="input input-bordered w-3/4"
+                value={barcodeSn}
+                onChange={(e) => setBarcodeSn(e.target.value)}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="">
+              <label htmlFor="edit_sn_report" className="btn btn-ghost btn-sm">Cancel</label>
+              <button
+                className="btn btn-primary btn-sm mx-2"
+                onClick={handleSaveEditBarcodeSN}
+                disabled={(quantity === originalQuantity && barcodeSn === originalBarcodeSn) || isSaving} // Disable button if unchanged or saving
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+
+            {/* Success/Error Message */}
+            {saveSuccess !== null && (
+              <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
+                {saveSuccess ? 'Saved successfully!' : ''}
+              </div>
+            )}
+            {validationError && <div className="text-red-500">{validationError}</div>}
+          </div>
+        </div>
+      </div>
         <div className="">
           {!hasReadPermission ? (
             <>
@@ -831,10 +1186,20 @@ const handleExportGrouping = async (): Promise<void> => {
               </div>
               <div className='ml-2 mb-2'>
                 <button
-                  onClick={() => setCheckDuplicate(!checkDuplicate)}
-                  className='btn btn-primary btn-sm'
+                  onClick={() => {
+                    setCheckDuplicate(!checkDuplicate);
+                    setTotalItem(0);
+                  }}
+                  className="btn btn-sm flex items-center gap-2 bg-white border-gray-300 hover:bg-gray-300 dark:text-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-900"
                 >
-                  {checkDuplicate ? 'Check Duplicate SN: ON' : 'Check Duplicate SN: OFF'}
+                  Cek SN Duplikat:
+                  <span
+                    className={`badge ${
+                      checkDuplicate ? "badge-success text-white" : "badge-error text-white"
+                    }`}
+                  >
+                    {checkDuplicate ? "ON" : "OFF"}
+                  </span>
                 </button>
               </div>
             <table className="table w-full">
@@ -860,7 +1225,7 @@ const handleExportGrouping = async (): Promise<void> => {
               ) : scannedItems.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center">
-                    Tidak ada data / Tidak ada SN Duplikat
+                    Data tidak ditemukan.
                   </td>
                 </tr>
               ) : (
@@ -872,7 +1237,32 @@ const handleExportGrouping = async (): Promise<void> => {
                     <td>{convertToJakartaTime(item.created_at)}</td>
                     <td>{item.sku}</td>
                     <td>{item.master_item.nama_barang}</td>
-                    <td>{item.invoice_number}</td>
+                    <td>
+                      <div className="flex items-center space-x-1 justify-between">
+                        <div>
+                          {item.invoice_number?.length > 30 
+                          ? `${item.invoice_number.slice(0, 30)}...` 
+                          : item.invoice_number}
+                        </div>
+                        <div className="tooltip opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none transition-opacity duration-150" data-tip="Edit Invoice" style={{ minWidth: "24px", minHeight: "24px" }}>
+                        <label
+                            htmlFor="edit_invoice_report"
+                            onClick={() =>
+                              handleEditInvoice(
+                                item.id,
+                                item.sku,
+                                item.qty,
+                                item.barcode_sn,
+                                item.master_item.nama_barang,
+                                item.invoice_number
+                              )
+                            }
+                          >
+                            <EditIcon />
+                          </label>
+                        </div>
+                      </div>
+                    </td>
                     <td>
                       <div className="flex items-center space-x-1 justify-between">
                         <div>
@@ -882,7 +1272,7 @@ const handleExportGrouping = async (): Promise<void> => {
                         </div>
                         <div className="tooltip opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none transition-opacity duration-150" data-tip="Edit SN" style={{ minWidth: "24px", minHeight: "24px" }}>
                         <label
-                            htmlFor="edit_report"
+                            htmlFor="edit_sn_report"
                             onClick={() =>
                               handleEditBarcodeSN(
                                 item.id,
@@ -956,7 +1346,23 @@ const handleExportGrouping = async (): Promise<void> => {
             {/* Pagination Controls */}
             <div className='flex justify-between'>
               <div className='flex'>
-                <span className='mt-3 text-gray-500'>Total barang di scan:</span>
+                {checkDuplicate ? (
+                  <>
+                    {totalItem >= 1 ? (
+                      <>
+                        <span className='mt-3 text-red-500'>Terdeteksi SN Duplikat:</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className='mt-3 text-blue-500'>Tidak ada SN Duplikat!</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className='mt-3 text-gray-500'>Total barang di scan:</span>
+                  </>
+                )}
                 <span className={`mt-3 ml-1`}>{totalItem ? totalItem :''}</span>
               </div>
               <span className='mt-3 badge badge-neutral badge-lg'>Halaman {currentPage}</span>

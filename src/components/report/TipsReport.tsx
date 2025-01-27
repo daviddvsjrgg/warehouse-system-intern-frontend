@@ -5,11 +5,13 @@ const TipsReport = () => {
   const [showScanSnFirstAlert, setScanSnFirstAlert] = useState(false);
   const [showScanSnSecondAlert, setShowScanSnSecondAlert] = useState(false);
   const [showScanSnThirdAlert, setShowScanSnThirdAlert] = useState(false);
+  const [showScanSnFourthAlert, setShowScanSnFourthAlert] = useState(false);
 
   useEffect(() => {
     const firstAlertState = localStorage.getItem('showScanSnFirstAlert');
     const secondAlertState = localStorage.getItem('showScanSnSecondAlert');
     const thirdAlertState = localStorage.getItem('showScanSnThirdAlert');
+    const fourthAlertState = localStorage.getItem('showScanSnFourthAlert');
 
     if (firstAlertState === "true") {
       setScanSnFirstAlert(true);
@@ -19,6 +21,9 @@ const TipsReport = () => {
     }
     if (thirdAlertState === "true") {
       setShowScanSnThirdAlert(true);
+    }
+    if (fourthAlertState === "true") {
+      setShowScanSnFourthAlert(true);
     }
   }, []);
 
@@ -37,13 +42,20 @@ const TipsReport = () => {
     localStorage.setItem('showScanSnThirdAlert', "false");
   };
 
+  const handleCloseFourthAlert = () => {
+    setShowScanSnFourthAlert(false);
+    localStorage.setItem('showScanSnFourthAlert', "false");
+  };
+
   const handleShowTips = () => {
     setScanSnFirstAlert(true);
     setShowScanSnSecondAlert(true);
     setShowScanSnThirdAlert(true);
+    setShowScanSnFourthAlert(true);
     localStorage.setItem('showScanSnFirstAlert', "true");
     localStorage.setItem('showScanSnSecondAlert', "true");
     localStorage.setItem('showScanSnThirdAlert', "true");
+    localStorage.setItem('showScanSnFourthAlert', "true");
   };
 
   return (
@@ -132,6 +144,31 @@ const TipsReport = () => {
           </span>
           <button
             onClick={handleCloseThirdAlert}
+            className="btn btn-sm btn-circle btn-ghost ml-2">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {showScanSnFourthAlert && (
+        <div role="alert" className="alert alert-info shadow-md mt-2 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="h-6 w-6 shrink-0 stroke-current">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          <span className="ml-2 flex-grow">
+            Cek Duplikasi SN ON/OFF, jika terdeteksi SN Duplikat, langkah selanjutnya adalah menghapus SN yang terduplikat jika diperlukan.
+          </span>
+          <button
+            onClick={handleCloseFourthAlert}
             className="btn btn-sm btn-circle btn-ghost ml-2">
             ✕
           </button>

@@ -275,7 +275,7 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
 };
 
 // Function to update an existing item (UPDATE)
-export const updateScannedItem = async (id: number, qty: number, barcode_sn: string): Promise<ScannedItem> => {
+export const updateScannedItemSN = async (id: number, qty: number, barcode_sn: string): Promise<ScannedItem> => {
   const cookies = parseCookies();
   const token = cookies.token;
 
@@ -284,8 +284,50 @@ export const updateScannedItem = async (id: number, qty: number, barcode_sn: str
   }
 
   const response = await api.put<ScannedItem>(
-    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/${id}`,
-    { qty, barcode_sn, _method: 'PUT' }, // Method override for backward compatibility
+    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/update-sn/${id}`,
+    { qty, barcode_sn, _method: 'PUT' },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const updateScannedItemInvoice = async (id: number, invoice_number: string): Promise<ScannedItem> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const response = await api.put<ScannedItem>(
+    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/update-invoice/${id}`,
+    { invoice_number, _method: 'PUT' },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const updateScannedItemAllInvoice = async (editInvoice: string, editTempInvoice: string): Promise<ScannedItem> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const response = await api.put<ScannedItem>(
+    `${process.env.NEXT_PUBLIC_SCAN_SN_API}/update-all-invoice`,
+    {editInvoice, editTempInvoice, _method: 'PUT' },
     {
       headers: {
         Authorization: `Bearer ${token}`,
