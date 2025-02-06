@@ -263,7 +263,7 @@ const Table: React.FC = () => {
       {/* Modal Add Master */}
       <input type="checkbox" id="AddMaster" className="modal-toggle" />
       <div className="modal" role="dialog">
-        <div className="modal-box">
+        <div className="modal-box w-11/12 max-w-6xl">
           <AddMaster />
         </div>
         <label className="modal-backdrop" htmlFor="AddMaster">Close</label>

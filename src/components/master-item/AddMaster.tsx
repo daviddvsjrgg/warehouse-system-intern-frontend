@@ -163,8 +163,7 @@ const AddMaster: React.FC = () => {
 
   return (
     <>
-      <h3 className="text-lg font-bold">Tambah Barang</h3>
-      <div className='divider -mb-2'></div>
+      <h3 className="text-lg font-bold">Tambah Barang (per-item)</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         {success && <p className="text-green-600">{success}</p>}
         {error && <p className="text-red-600">{error}</p>}
@@ -199,8 +198,8 @@ const AddMaster: React.FC = () => {
         >
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>
+        <div className='divider divide-orange-100'></div>
         <div className='text-lg font-bold'>Import Barang dari Excel</div>
-        <div className='divider'></div>
         <div className='flex justify-start'>
           <input 
             type="file" 

@@ -696,7 +696,7 @@ const handleExportGrouping = async (): Promise<void> => {
                        <>
                        </>
                       )}
-                      <span className="text-info">
+                      <span className="text-black dark:text-white">
                         {messageSaveAllInvoice}
                       </span>
                       <span className="text-success block">
@@ -869,7 +869,7 @@ const handleExportGrouping = async (): Promise<void> => {
                 {isSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
-
+            <div className='text-sm font-medium ml-2 mt-2'>Note: Hanya sn ini saja yang terubah invoicenya.</div>
             {/* Success/Error Message */}
             {saveSuccess !== null && (
               <div className={`mt-4 text-sm ${saveSuccess ? 'text-green-500' : 'text-red-500'}`}>
