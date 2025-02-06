@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { addMasterItems } from '@/api/master-item/master-item';
+import { addMasterItems, updateMasterItem } from '@/api/master-item/master-item';
 import * as XLSX from 'xlsx';
 
 // Define the interface for the expected structure of the Excel data
@@ -24,31 +24,32 @@ const AddMaster: React.FC = () => {
     setError(null);
     setSuccess(null);
     setIsSubmitting(true); // Disable the button on form submission
-
+  
     // Validation: Check if any field is empty
     if (!sku || !nama_barang) {
       setError('All fields are required!');
       setIsSubmitting(false); // Re-enable the button if validation fails
       return; // Stop the function if fields are empty
     }
+  
     const barcode_sn = `${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}-${Math.random().toString(36).substring(2, 7)}`;
-
+  
     // Prepare the new item to be added
     const newItem = {
       sku,
       nama_barang,
-      barcode_sn : `${barcode_sn}`
+      barcode_sn: `${barcode_sn}`,
     };
-
+  
     try {
       setError('');
-
+  
       // Create an array for batch submission
       const itemsToAdd = [newItem];
-
+  
       // Call the batch function to add items and capture the response in `addedItems`
       const addedItems = await addMasterItems(itemsToAdd); // This is the full response object
-
+  
       // Check the response status code (assuming 200 for success, others for errors)
       if (addedItems.status_code === 201) {
         // If the request was successful, get the success message
@@ -58,16 +59,25 @@ const AddMaster: React.FC = () => {
         setSku('');
         setNamaBarang('');
         setTimeout(() => {
-          setSuccess(''); // Display success message
+          setSuccess(''); // Clear success message after timeout
         }, 6000);
       } else {
-        // If the request failed (status_code is not 200), get the error message
-        setError(addedItems.message || 'An unknown error occurred.'); // Display error message
+        // If the request failed (status_code is not 201), update the nama_barang
+        const itemId = addedItems.id; // Assuming the added item has an ID field
+  
+        // Call the API to update the nama_barang
+        await updateMasterItem(itemId, nama_barang);
+        
+        // Show confirmation message after update
+        setSuccess(`Item updated successfully with name: ${nama_barang}`);
+        
+        // Optionally, reset the fields after update
+        setSku('');
+        setNamaBarang('');
       }
-
+  
       console.log('Added Items:', addedItems);
-      
-      
+  
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -78,6 +88,7 @@ const AddMaster: React.FC = () => {
       setIsSubmitting(false); // Re-enable the button after submission attempt
     }
   };
+  
 
   // Function to handle file upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

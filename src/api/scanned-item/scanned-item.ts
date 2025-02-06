@@ -246,12 +246,12 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
   // Prepare the payload with the correct structure
   const payload = {
     items: items.map(item => ({
-      item_id: item.id,               // Use item.id
-      sku: item.sku,                  // Use item.sku
-      invoice_number: item.invoiceNumber, // Use item.invoiceNumber
-      qty: item.qty,                  // Use item.qty
+      item_id: item.id,
+      sku: item.sku,
+      invoice_number: item.invoiceNumber,
+      qty: item.qty,
       user_id: userId,   
-      barcode_sn: item.barcode_sn             // Use the fetched userId
+      barcode_sn: item.barcode_sn
     })),
   };
 

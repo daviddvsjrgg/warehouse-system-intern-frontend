@@ -313,9 +313,36 @@ const AddScanned = () => {
         return;
       }
   
-      // Proceed with submission if no errors
-      const response = await addScannedItems(itemList);
-      console.log('Items added successfully:', response);
+      const chunkArray = (array: any[], chunkSize: number) => {
+        const chunks = [];
+        for (let i = 0; i < array.length; i += chunkSize) {
+          chunks.push(array.slice(i, i + chunkSize));
+        }
+        return chunks;
+      };
+      
+      try {
+        const chunks = chunkArray(itemList, 50);
+      
+        for (const chunk of chunks) {
+          const response: any = await addScannedItems(chunk);
+      
+          if (response?.status_code !== 201 || response?.success === false) {
+            setError(prevError => ({
+              ...prevError,
+              submitError: `Submit gagal karena barang tidak ada/terhapus.`,
+            }));
+            setLoading(false);
+            return;
+          }
+      
+          console.log('Items added successfully:', response);
+        }
+      } catch (error) {
+        console.error('Error adding items:', error);
+      } finally {
+        setLoading(false);
+      }
   
       // Clear inputs after successful submission
       setSuccessMessage('Barang berhasil discan!');
@@ -339,8 +366,12 @@ const AddScanned = () => {
         setSuccessMessage(null);
       }, 3000);
   
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting items:', error);
+      setError(prevError => ({
+        ...prevError,
+        submitError: `Server Error, ${error?.message}`,
+      }));
       setLoading(false);
     }
   };  
@@ -421,47 +452,101 @@ const AddScanned = () => {
 
   // Handle file import
   const handleImport = () => {
-    if (!selectedFile) {
-      setErrorMessage("Please select a valid Excel file.");
-      return;
-    }
-
-    setIsImporting(true);
-    console.log("Importing file:", selectedFile);
-
-    // Simulate import process
-    setTimeout(() => {
+    try {
+      if (!selectedFile) {
+        setErrorMessage("Please select a valid Excel file.");
+        return;
+      }
+  
+      setIsImporting(true);
+      console.log("Importing file:", selectedFile);
+  
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(selectedFile); // Use `readAsArrayBuffer` instead of deprecated `readAsBinaryString`
+  
+      reader.onload = (e) => {
+        try {
+          if (!e.target?.result) {
+            throw new Error("Failed to read file.");
+          }
+  
+          const arrayBuffer = e.target.result as ArrayBuffer;
+          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+  
+          // Assuming the first sheet contains the data
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+  
+          // Convert sheet data to JSON
+          const importedData = XLSX.utils.sheet_to_json(sheet);
+  
+          // Map the data to match the required format
+          const formattedData = importedData.map((row: any, index: number) => ({
+            id: index + 1, // Generate unique ID if not provided
+            invoiceNumber: row["Invoice"] || "",
+            sku: row["SKU"] || "",
+            namaBarang: row["Nama Barang"] || "",
+            barcode_sn: row["Barcode SN"] || "",
+            qty: row["Qty"] || 1, // Default to 1 if missing
+          }));
+  
+          // ✅ Replace `scannedItems` in localStorage
+          localStorage.setItem("scannedItems", JSON.stringify(formattedData));
+  
+          // ✅ Update state with the new data
+          setItemList(formattedData);
+  
+          closeModalImport();
+        } catch (error: any) {
+          setErrorMessage("Error processing file: " + error.message);
+        } finally {
+          setIsImporting(false);
+        }
+      };
+  
+      reader.onerror = () => {
+        setErrorMessage("Error reading file.");
+        setIsImporting(false);
+      };
+    } catch (error: any) {
+      setErrorMessage("Unexpected error: " + error.message);
       setIsImporting(false);
-      alert("File imported successfully!");
-      closeModalImport();
-    }, 3000);
+    }
   };
 
   const handleCopyToExcel = () => {
     // Prepare data for Excel
     const excelData = itemList.map(item => ({
+      ID: item.id,
       Invoice: item.invoiceNumber,
       SKU: item.sku,
-      Barcode_SN: item.barcode_sn,
+      "Nama Barang": item.namaBarang,
+      "Barcode SN": item.barcode_sn,
+      Qty: item.qty
     }));
+
   
     // Create a worksheet from the data
     const worksheet = XLSX.utils.json_to_sheet(excelData);
   
-    // Set column widths (you can adjust the width values based on your needs)
+    // Set column widths (adjust based on content)
     worksheet['!cols'] = [
-      { wch: 15 },  // Invoice column width (15 characters wide)
-      { wch: 20 },  // SKU column width (20 characters wide)
-      { wch: 25 },  // Barcode_SN column width (25 characters wide)
+      { wch: 10 },  // ID column width
+      { wch: 15 },  // Invoice column width
+      { wch: 20 },  // SKU column width
+      { wch: 30 },  // Nama Barang column width
+      { wch: 25 },  // Barcode_SN column width
+      { wch: 10 },  // Qty column width
     ];
   
     // Create a new workbook and append the worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Items');
   
-    // Trigger file download with the specified filename
+    // Trigger file download
     XLSX.writeFile(workbook, 'Preview_Items_List.xlsx');
-  };
+};
+
 
   return (
     <div>
@@ -510,41 +595,44 @@ const AddScanned = () => {
           </div>
         </div>
       )}
-      <button
-        onClick={toggleCardVisibility} // Calls the toggle function on click
-        className="mb-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 btn-sm"
-      >
-        {isCardVisible ? "Tutup Card" : "Tampilkan Card"}
-      </button>
+      <div className="flex items-center gap-4 mb-2">
+        <button
+          onClick={toggleCardVisibility}
+          className="bg-blue-500 text-white rounded-md hover:bg-blue-600 btn-sm"
+        >
+          {isCardVisible ? "Tutup Card" : "Tampilkan Card"}
+        </button>
+
+        <button
+          className="btn btn-sm btn-success text-white flex items-center gap-2"
+          onClick={openModalImport}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 48 48"
+          >
+            <path fill="#4CAF50" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"></path>
+            <path fill="#FFF" d="M32 15H39V18H32zM32 25H39V28H32zM32 30H39V33H32zM32 20H39V23H32zM25 15H30V18H25zM25 25H30V28H25zM25 30H30V33H25zM25 20H30V23H25z"></path>
+            <path fill="#2E7D32" d="M27 42L6 38 6 10 27 6z"></path>
+            <path fill="#FFF" d="M19.129,31l-2.411-4.561c-0.092-0.171-0.186-0.483-0.284-0.938h-0.037c-0.046,0.215-0.154,0.541-0.324,0.979L13.652,31H9.895l4.462-7.001L10.274,17h3.837l2.001,4.196c0.156,0.331,0.296,0.725,0.42,1.179h0.04c0.078-0.271,0.224-0.68,0.439-1.22L19.237,17h3.515l-4.199,6.939l4.316,7.059h-3.74V31z"></path>
+          </svg>
+          Import Excel
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         
         <div className="col-span-1">
           {/* Scan SN */}  
-          {/* Button to open the modal */}
-          <button
-            className="btn btn-sm btn-success text-white hidden items-center gap-2 mb-2 "
-            onClick={openModalImport}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 48 48"
-            >
-              <path fill="#4CAF50" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"></path>
-              <path fill="#FFF" d="M32 15H39V18H32zM32 25H39V28H32zM32 30H39V33H32zM32 20H39V23H32zM25 15H30V18H25zM25 25H30V28H25zM25 30H30V33H25zM25 20H30V23H25z"></path>
-              <path fill="#2E7D32" d="M27 42L6 38 6 10 27 6z"></path>
-              <path fill="#FFF" d="M19.129,31l-2.411-4.561c-0.092-0.171-0.186-0.483-0.284-0.938h-0.037c-0.046,0.215-0.154,0.541-0.324,0.979L13.652,31H9.895l4.462-7.001L10.274,17h3.837l2.001,4.196c0.156,0.331,0.296,0.725,0.42,1.179h0.04c0.078-0.271,0.224-0.68,0.439-1.22L19.237,17h3.515l-4.199,6.939l4.316,7.059h-3.74V31z"></path>
-            </svg>
-            Import Excel
-          </button>
 
           {/* Modal */}
           {isOpenModalImport && (
             <div className="modal modal-open">
               <div className="modal-box">
                 <h3 className="font-bold text-lg">Import Excel File</h3>
-                <p className="py-4">Choose an Excel file to import:</p>
+                <p className="py-2">Choose an Excel file to import:</p>
 
                 {/* File input */}
                 <input
@@ -553,6 +641,7 @@ const AddScanned = () => {
                   accept=".xlsx, .xls"
                   onChange={handleFileChange}
                 />
+                <p className="py-4">Note: Import ini akan menggantikan seluruh SCAN SN, Format kolom seperti hasil export.</p>
 
                 {/* Error message */}
                 {errorMessage && (
