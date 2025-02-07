@@ -604,7 +604,7 @@ const AddScanned = () => {
         </button>
 
         <button
-          className="btn btn-sm btn-success text-white flex items-center gap-2"
+          className="btn btn-sm btn-success hidden text-white items-center gap-2"
           onClick={openModalImport}
         >
           <svg
