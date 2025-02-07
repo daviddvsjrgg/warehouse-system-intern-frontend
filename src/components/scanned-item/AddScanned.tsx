@@ -31,7 +31,9 @@ const AddScanned = () => {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [lastAddedBarcode, setLastAddedBarcode] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [progressCheckDuplicate, setProgressCheckDuplicate] = useState(0);
+  const [progressItem, setProgressItem] = useState(0);
+    
   const toggleCardVisibility = () => {
     setIsCardVisible(prevState => !prevState);  
   };  
@@ -129,6 +131,7 @@ const AddScanned = () => {
   };
 
   const handleAddItem = async () => {
+    setIsModalOpen(false);
     let hasError = false;
   
     // Reset error state
@@ -240,156 +243,142 @@ const AddScanned = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-  
     if (itemList.length === 0) return;
   
     setLoading(true);
+    setProgressCheckDuplicate(0);
+    setProgressItem(0);
   
-    const chunkArray = (array: any[], chunkSize: number) => {
-      const chunks = [];
-      for (let i = 0; i < array.length; i += chunkSize) {
-        chunks.push(array.slice(i, i + chunkSize));
-      }
-      return chunks;
-    };
-    
+    const chunkArray = (array: any[], chunkSize: number) =>
+      Array.from({ length: Math.ceil(array.length / chunkSize) }, (_, i) =>
+        array.slice(i * chunkSize, i * chunkSize + chunkSize)
+      );
+  
     try {
-      setLoading(true);
-    
-      // Chunk invoice numbers and barcode SNs
-      const invoiceNumbers = itemList.map(item => item.invoiceNumber.toLowerCase());
-      const barcodeSNs = itemList.map(item => item.barcode_sn.toLowerCase());
-    
-      const invoiceChunks = chunkArray(invoiceNumbers, 50);
-      const barcodeChunks = chunkArray(barcodeSNs, 50);
-    
+      const invoiceNumbers = itemList.map((item) => item.invoiceNumber.toLowerCase());
+      const barcodeSNs = itemList.map((item) => item.barcode_sn.toLowerCase());
+  
+      const chunkSize = 50; // Adjust if needed
+      const invoiceChunks = chunkArray(invoiceNumbers, chunkSize);
+      const barcodeChunks = chunkArray(barcodeSNs, chunkSize);
+  
       let existingItems: any[] = [];
-    
-      // Fetch existing items in batches
-      for (let i = 0; i < invoiceChunks.length; i++) {
-        const batchInvoices = invoiceChunks[i];
-        const batchBarcodes = barcodeChunks[i] || []; // Handle case where barcodes list is shorter
-    
-        try {
-          console.log("Processing Check Duplicate")
-          const batchExistingItems = await fetchScannedItemsBatch(batchInvoices, batchBarcodes);
-          existingItems = existingItems.concat(batchExistingItems);
-        } catch (error) {
-          console.error('Error fetching existing items:', error);
-          setError(prevError => ({
-            ...prevError,
-            submitError: 'Error fetching existing items, please try again.',
-          }));
-          setLoading(false);
-          return;
-        }
-      }
-    
-      // Initialize sets to track duplicates
+  
+      // **Parallel API Calls** for Checking Duplicates
+      const checkPromises = invoiceChunks.map((batchInvoices, index) => {
+        const batchBarcodes = barcodeChunks[index] || [];
+        return fetchScannedItemsBatch(batchInvoices, batchBarcodes)
+          .then((batchExistingItems) => {
+            existingItems = existingItems.concat(batchExistingItems);
+            setProgressCheckDuplicate(Math.round(((index + 1) / invoiceChunks.length) * 100));
+          })
+          .catch((error) => {
+            console.error("Error fetching existing items:", error);
+            setError((prevError) => ({
+              ...prevError,
+              submitError: "Error fetching existing items, please try again.",
+            }));
+            setLoading(false);
+          });
+      });
+  
+      await Promise.all(checkPromises); // Wait for all requests to complete
+  
       const duplicateInvoices = new Set<string>();
       const duplicateBarcodes = new Set<string>();
-    
-      // Check for duplicates in the fetched data
+  
       for (const item of itemList) {
         const lowerInvoice = item.invoiceNumber.toLowerCase();
         const lowerBarcode = item.barcode_sn.toLowerCase();
-    
-        if (existingItems.some(existing => existing.invoice_number.toLowerCase() === lowerInvoice)) {
+  
+        if (existingItems.some((existing) => existing.invoice_number.toLowerCase() === lowerInvoice)) {
           duplicateInvoices.add(item.invoiceNumber);
         }
-    
-        if (existingItems.some(existing => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
+        if (existingItems.some((existing) => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
           duplicateBarcodes.add(item.barcode_sn);
         }
       }
-    
-      // Detect duplicates within the input list itself
+  
       const barcodeSet = new Set<string>();
       for (const item of itemList) {
         const barcode = item.barcode_sn.toLowerCase();
         if (barcodeSet.has(barcode)) {
-          setError(prev => ({ ...prev, barcodeSN: 'Duplicate Barcode SN found in the list.' }));
+          setError((prev) => ({ ...prev, barcodeSN: "Duplicate Barcode SN found in the list." }));
           duplicateBarcodes.add(`${item.barcode_sn} = Multiple Barcode SN Detected`);
         }
         barcodeSet.add(barcode);
       }
-    
-      // Format error messages
-      let errorMessage = '';
-    
-      if (duplicateInvoices.size > 0) {
-        errorMessage += 'Duplicate Invoice Numbers:<br>';
-        Array.from(duplicateInvoices).forEach((invoice, index) => {
-          errorMessage += `${index + 1}. Invoice "${invoice}"<br>`;
-        });
-      }
-    
-      if (duplicateBarcodes.size > 0) {
-        errorMessage += '<br>Duplicate Barcode SNs:<br>';
-        Array.from(duplicateBarcodes).forEach((barcode, index) => {
-          errorMessage += `${index + 1}. Barcode "${barcode}"<br>`;
-        });
-      }
-    
-      if (errorMessage) {
-        setError(prev => ({
+  
+      if (duplicateInvoices.size || duplicateBarcodes.size) {
+        let errorMessage = "";
+        if (duplicateInvoices.size) {
+          errorMessage += "Duplicate Invoice Numbers:<br>" + Array.from(duplicateInvoices).map((inv, i) => `${i + 1}. Invoice "${inv}"<br>`).join("");
+        }
+        if (duplicateBarcodes.size) {
+          errorMessage += "<br>Duplicate Barcode SNs:<br>" + Array.from(duplicateBarcodes).map((bar, i) => `${i + 1}. Barcode "${bar}"<br>`).join("");
+        }
+  
+        setError((prev) => ({
           ...prev,
           submitError: errorMessage.trim(),
         }));
         setLoading(false);
         return;
       }
-    
-      // Submit items in chunks
-      const chunks = chunkArray(itemList, 50);
-      for (const chunk of chunks) {
-        try {
-          const response: any = await addScannedItems(chunk);
-          if (response?.status_code !== 201 || response?.success === false) {
-            setError(prevError => ({
+  
+      // **Parallel API Calls** for Submitting Items
+      const itemChunks = chunkArray(itemList, chunkSize);
+      const submitPromises = itemChunks.map((chunk, index) =>
+        addScannedItems(chunk)
+          .then((response: any) => {
+            if (response?.status_code !== 201 || response?.success === false) {
+              throw new Error("Submit failed because items are missing/deleted.");
+            }
+            setProgressItem(Math.round(((index + 1) / itemChunks.length) * 100));
+          })
+          .catch((error) => {
+            console.error("Error adding items:", error);
+            setError((prevError) => ({
               ...prevError,
-              submitError: 'Submit gagal karena barang tidak ada/terhapus.',
+              submitError: "Submit gagal karena barang tidak ada/terhapus.",
             }));
-            setLoading(false);
-            return;
-          }
-          console.log('Items added successfully:', response);
-        } catch (error) {
-          console.error('Error adding items:', error);
-        }
-      }
-    
-      // Clear inputs after successful submission
-      setSuccessMessage('Barang berhasil discan!');
-      setInvoiceNumber('');
+          })
+      );
+  
+      await Promise.all(submitPromises); // Wait for all requests to complete
+  
+      setSuccessMessage("Barang berhasil discan!");
+      setInvoiceNumber("");
       setItemList([]);
-      localStorage.removeItem('scannedItems');
-      setSelectedItem('Cari Barang');
+      localStorage.removeItem("scannedItems");
+      setSelectedItem("Cari Barang");
       setSelectedItemId(null);
-      setBarcodeSN('');
+      setBarcodeSN("");
       setLoading(false);
       setError({
-        invoiceNumber: '',
-        selectedItem: '',
-        barcodeSN: '',
-        submitError: '',
+        invoiceNumber: "",
+        selectedItem: "",
+        barcodeSN: "",
+        submitError: "",
         submitInvoiceNumbers: [] as string[],
         submitBarcodeSNs: [] as string[],
       });
-    
+  
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
     } catch (error: any) {
-      console.error('Error submitting items:', error);
-      setError(prevError => ({
+      console.error("Error submitting items:", error);
+      setError((prevError) => ({
         ...prevError,
         submitError: `Server Error, ${error?.message}`,
       }));
       setLoading(false);
+    } finally {
+      setProgressCheckDuplicate(0);
+      setProgressItem(0);
     }
-    
-  };  
+  };
 
   const filteredItems = items.filter(item =>
     item.nama_barang.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -1237,24 +1226,33 @@ const AddScanned = () => {
                   <div className="modal-box">
                     <h2 className="text-xl font-semibold mb-4">Apakah yakin untuk mengirim scan sn?</h2>
                     <p className="text-sm mb-6 text-gray-700">Data akan masuk kedalam database.</p>
-                    
+              
                     {error.submitError && (
                       <div
                         className="mt-3 text-red-600 text-sm"
                         dangerouslySetInnerHTML={{ __html: error.submitError }}
                       />
                     )}
-
+              
+                    {/* Progress for Checking Duplicates */}
+                    <p className="text-sm font-medium mt-3">Mengecek Duplikat: {progressCheckDuplicate}%</p>
+                    <progress
+                      className="progress progress-info w-56"
+                      value={progressCheckDuplicate}
+                      max="100"
+                    ></progress>
+              
+                    {/* Progress for Submitting Items */}
+                    <p className="text-sm font-medium mt-3">Mengirim ke database: {progressItem}%</p>
+                    <progress
+                      className="progress progress-success w-56"
+                      value={progressItem}
+                      max="100"
+                    ></progress>
+              
                     {/* Modal Footer with Cancel and Submit Buttons */}
                     <div className="modal-action flex justify-end">
-                      {/* Cancel Button */}
-                      <button
-                        className="btn mr-2"
-                        onClick={() => setIsModalOpen(false)}
-                      >
-                        Cancel
-                      </button>
-                      {/* Submit Button */}
+                      <button className="btn mr-2" onClick={() => setIsModalOpen(false)}>Cancel</button>
                       <button
                         onClick={handleSubmit}
                         className={`btn btn-primary ${loading ? 'animate-pulse' : ''}`}
