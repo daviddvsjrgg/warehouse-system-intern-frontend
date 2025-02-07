@@ -245,65 +245,92 @@ const AddScanned = () => {
   
     setLoading(true);
   
+    const chunkArray = (array: any[], chunkSize: number) => {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+      }
+      return chunks;
+    };
+    
     try {
-      // Extract invoice numbers and barcode SNs from the itemList
+      setLoading(true);
+    
+      // Chunk invoice numbers and barcode SNs
       const invoiceNumbers = itemList.map(item => item.invoiceNumber.toLowerCase());
       const barcodeSNs = itemList.map(item => item.barcode_sn.toLowerCase());
-  
-      // Fetch existing items matching these invoice numbers or barcode SNs
-      const existingItems = await fetchScannedItemsBatch(invoiceNumbers, barcodeSNs);
-  
+    
+      const invoiceChunks = chunkArray(invoiceNumbers, 50);
+      const barcodeChunks = chunkArray(barcodeSNs, 50);
+    
+      let existingItems: any[] = [];
+    
+      // Fetch existing items in batches
+      for (let i = 0; i < invoiceChunks.length; i++) {
+        const batchInvoices = invoiceChunks[i];
+        const batchBarcodes = barcodeChunks[i] || []; // Handle case where barcodes list is shorter
+    
+        try {
+          console.log("Processing Check Duplicate")
+          const batchExistingItems = await fetchScannedItemsBatch(batchInvoices, batchBarcodes);
+          existingItems = existingItems.concat(batchExistingItems);
+        } catch (error) {
+          console.error('Error fetching existing items:', error);
+          setError(prevError => ({
+            ...prevError,
+            submitError: 'Error fetching existing items, please try again.',
+          }));
+          setLoading(false);
+          return;
+        }
+      }
+    
       // Initialize sets to track duplicates
       const duplicateInvoices = new Set<string>();
       const duplicateBarcodes = new Set<string>();
-  
+    
       // Check for duplicates in the fetched data
-      for (let i = 0; i < itemList.length; i++) {
-        const item = itemList[i];
+      for (const item of itemList) {
         const lowerInvoice = item.invoiceNumber.toLowerCase();
         const lowerBarcode = item.barcode_sn.toLowerCase();
-  
-        // Check for duplicate invoice numbers
+    
         if (existingItems.some(existing => existing.invoice_number.toLowerCase() === lowerInvoice)) {
           duplicateInvoices.add(item.invoiceNumber);
         }
-  
-        // Check for duplicate barcode SNs
+    
         if (existingItems.some(existing => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
           duplicateBarcodes.add(item.barcode_sn);
         }
       }
-  
-      // Format error messages for duplicates
-      let errorMessage = '';
-  
+    
+      // Detect duplicates within the input list itself
       const barcodeSet = new Set<string>();
-      for (let i = 0; i < itemList.length; i++) {
-        const barcode = itemList[i].barcode_sn.toLowerCase();
+      for (const item of itemList) {
+        const barcode = item.barcode_sn.toLowerCase();
         if (barcodeSet.has(barcode)) {
           setError(prev => ({ ...prev, barcodeSN: 'Duplicate Barcode SN found in the list.' }));
-          const item = itemList[i];
-          duplicateBarcodes.add(item.barcode_sn + " = Multiple Barcode SN Detected");
+          duplicateBarcodes.add(`${item.barcode_sn} = Multiple Barcode SN Detected`);
         }
         barcodeSet.add(barcode);
       }
-      // Format duplicate invoices section
+    
+      // Format error messages
+      let errorMessage = '';
+    
       if (duplicateInvoices.size > 0) {
         errorMessage += 'Duplicate Invoice Numbers:<br>';
         Array.from(duplicateInvoices).forEach((invoice, index) => {
           errorMessage += `${index + 1}. Invoice "${invoice}"<br>`;
         });
       }
-  
-      // Format duplicate barcode SNs section
+    
       if (duplicateBarcodes.size > 0) {
         errorMessage += '<br>Duplicate Barcode SNs:<br>';
         Array.from(duplicateBarcodes).forEach((barcode, index) => {
           errorMessage += `${index + 1}. Barcode "${barcode}"<br>`;
         });
       }
-  
-      // If any duplicates are found, set the error message and stop the process
+    
       if (errorMessage) {
         setError(prev => ({
           ...prev,
@@ -312,38 +339,26 @@ const AddScanned = () => {
         setLoading(false);
         return;
       }
-  
-      const chunkArray = (array: any[], chunkSize: number) => {
-        const chunks = [];
-        for (let i = 0; i < array.length; i += chunkSize) {
-          chunks.push(array.slice(i, i + chunkSize));
-        }
-        return chunks;
-      };
-      
-      try {
-        const chunks = chunkArray(itemList, 50);
-      
-        for (const chunk of chunks) {
+    
+      // Submit items in chunks
+      const chunks = chunkArray(itemList, 50);
+      for (const chunk of chunks) {
+        try {
           const response: any = await addScannedItems(chunk);
-      
           if (response?.status_code !== 201 || response?.success === false) {
             setError(prevError => ({
               ...prevError,
-              submitError: `Submit gagal karena barang tidak ada/terhapus.`,
+              submitError: 'Submit gagal karena barang tidak ada/terhapus.',
             }));
             setLoading(false);
             return;
           }
-      
           console.log('Items added successfully:', response);
+        } catch (error) {
+          console.error('Error adding items:', error);
         }
-      } catch (error) {
-        console.error('Error adding items:', error);
-      } finally {
-        setLoading(false);
       }
-  
+    
       // Clear inputs after successful submission
       setSuccessMessage('Barang berhasil discan!');
       setInvoiceNumber('');
@@ -358,14 +373,13 @@ const AddScanned = () => {
         selectedItem: '',
         barcodeSN: '',
         submitError: '',
-        submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
+        submitInvoiceNumbers: [] as string[],
         submitBarcodeSNs: [] as string[],
       });
-
+    
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
-  
     } catch (error: any) {
       console.error('Error submitting items:', error);
       setError(prevError => ({
@@ -374,6 +388,7 @@ const AddScanned = () => {
       }));
       setLoading(false);
     }
+    
   };  
 
   const filteredItems = items.filter(item =>
@@ -451,7 +466,7 @@ const AddScanned = () => {
   };
 
   // Handle file import
-  const handleImport = () => {
+  const handleImport = async () => {
     try {
       if (!selectedFile) {
         setErrorMessage("Please select a valid Excel file.");
@@ -462,9 +477,9 @@ const AddScanned = () => {
       console.log("Importing file:", selectedFile);
   
       const reader = new FileReader();
-      reader.readAsArrayBuffer(selectedFile); // Use `readAsArrayBuffer` instead of deprecated `readAsBinaryString`
+      reader.readAsArrayBuffer(selectedFile);
   
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           if (!e.target?.result) {
             throw new Error("Failed to read file.");
@@ -473,28 +488,42 @@ const AddScanned = () => {
           const arrayBuffer = e.target.result as ArrayBuffer;
           const workbook = XLSX.read(arrayBuffer, { type: "array" });
   
-          // Assuming the first sheet contains the data
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
   
-          // Convert sheet data to JSON
           const importedData = XLSX.utils.sheet_to_json(sheet);
   
-          // Map the data to match the required format
-          const formattedData = importedData.map((row: any, index: number) => ({
-            id: index + 1, // Generate unique ID if not provided
-            invoiceNumber: row["Invoice"] || "",
-            sku: row["SKU"] || "",
-            namaBarang: row["Nama Barang"] || "",
-            barcode_sn: row["Barcode SN"] || "",
-            qty: row["Qty"] || 1, // Default to 1 if missing
-          }));
+          // Fetch additional details for each SKU
+          const formattedData = await Promise.all(
+            importedData.map(async (row: any) => {
+              const sku = row["SKU"] || "";
+              const barcode_sn = row["Barcode SN"] || "";
+              const invoiceNumber = row["Invoice"] || "";
   
-          // ✅ Replace `scannedItems` in localStorage
-          localStorage.setItem("scannedItems", JSON.stringify(formattedData));
+              if (!sku) return null; // Skip if SKU is missing
   
-          // ✅ Update state with the new data
-          setItemList(formattedData);
+              try {
+                const fetchedData: any = await fetchScannedItems(1, 1, sku);
+                return {
+                  id: fetchedData?.id || 0,
+                  invoiceNumber,
+                  sku,
+                  namaBarang: fetchedData?.nama_barang || "",
+                  barcode_sn,
+                  qty: 1,
+                };
+              } catch (error) {
+                console.error(`Error fetching data for SKU: ${sku}`, error);
+                return null;
+              }
+            })
+          );
+  
+          // Filter out any null values (failed fetch)
+          const validData = formattedData.filter((item) => item !== null);
+  
+          localStorage.setItem("scannedItems", JSON.stringify(validData));
+          setItemList(validData);
   
           closeModalImport();
         } catch (error: any) {
@@ -513,6 +542,7 @@ const AddScanned = () => {
       setIsImporting(false);
     }
   };
+  
 
   const handleCopyToExcel = () => {
     // Prepare data for Excel
@@ -604,7 +634,7 @@ const AddScanned = () => {
         </button>
 
         <button
-          className="btn btn-sm btn-success hidden text-white items-center gap-2"
+          className="btn btn-sm btn-success text-white hidden items-center gap-2"
           onClick={openModalImport}
         >
           <svg
