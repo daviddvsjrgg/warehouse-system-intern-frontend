@@ -24,7 +24,7 @@ const Home = () => {
                 Selamat Datang di Warehouse System
               </h1>
               <p className="mt-2 dark:text-gray-300">
-                Terakhir Push: <span className="font-medium">Selasa, 28 Januari 2025, 11:26 WIB</span>
+                Terakhir Push: <span className="font-medium">Jumat, 07 Januari 2025, 14:00 WIB</span>
               </p>
 
               {/* Links Section */}
