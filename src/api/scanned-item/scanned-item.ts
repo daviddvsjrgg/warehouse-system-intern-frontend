@@ -145,7 +145,7 @@ export const fetchScannedItemsBatch = async (
     if (endDate) queryParams.append('end_date', endDate);
 
     const response = await api.get<ApiResponse>(
-      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.toString()}&per_page=10000000`,
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
