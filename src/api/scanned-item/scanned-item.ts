@@ -344,12 +344,10 @@ export const fetchCheckDuplicateSN = async (
         },
       }
     );
-    console.log("data fetch: " + JSON.stringify(response.data));
     return response.data; 
     
   } catch (error: any) {
     const errorMessage = error?.response?.data?.message || error.message || "Unknown Error";
-    console.log("error:" + errorMessage)
     throw new Error(errorMessage);
   }
 };

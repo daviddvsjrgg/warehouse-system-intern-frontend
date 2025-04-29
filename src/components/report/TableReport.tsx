@@ -345,7 +345,7 @@ useEffect(() => {
 
   const handleExportPerItem = async () => {
     try {
-        const items = await fetchScannedItems(1, 100000, debouncedSkuSearch, startDate, endDate);
+        const items = await fetchScannedItems(1, 10000, debouncedSkuSearch, startDate, endDate);
 
         // Map fetched items to export data with User field
         const exportData = items.map(item => ({

@@ -1,7 +1,7 @@
 /* eslint-disable */ 
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchMasterItems, Item } from '@/api/master-item/master-item';
-import { addScannedItems, fetchScannedItems, fetchScannedItemsBatch } from '@/api/scanned-item/scanned-item';
+import { addScannedItems, fetchScannedItems } from '@/api/scanned-item/scanned-item';
 import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx';
 interface PreviewItem {
@@ -228,33 +228,11 @@ const AddScannedByInvoice = ({ invoice_number }: { invoice_number: string }) => 
     setLoading(true);
   
     try {
-      // Extract invoice numbers and barcode SNs from the itemList
-      const invoiceNumbers = itemList.map(item => item.invoiceNumber.toLowerCase());
-      const barcodeSNs = itemList.map(item => item.barcode_sn.toLowerCase());
   
       // Fetch existing items matching these invoice numbers or barcode SNs
-      const existingItems = await fetchScannedItemsBatch(invoiceNumbers, barcodeSNs);
   
       // Initialize sets to track duplicates
-      const duplicateInvoices = new Set<string>();
       const duplicateBarcodes = new Set<string>();
-  
-      // Check for duplicates in the fetched data
-      for (let i = 0; i < itemList.length; i++) {
-        const item = itemList[i];
-        const lowerInvoice = item.invoiceNumber.toLowerCase();
-        const lowerBarcode = item.barcode_sn.toLowerCase();
-  
-        // Check for duplicate invoice numbers
-        if (existingItems.some(existing => existing.invoice_number.toLowerCase() === lowerInvoice)) {
-          duplicateInvoices.add(item.invoiceNumber);
-        }
-  
-        // Check for duplicate barcode SNs
-        if (existingItems.some(existing => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
-          duplicateBarcodes.add(item.barcode_sn);
-        }
-      }
   
       // Format error messages for duplicates
       let errorMessage = '';
