@@ -63,7 +63,7 @@ type SerialNumber = {
   
       // If no token is found, throw an error
       if (!token) {
-        throw new Error('No token found');
+        throw new Error('Silahkan Login');
       }
   
       // Send the request with the token in the Authorization header

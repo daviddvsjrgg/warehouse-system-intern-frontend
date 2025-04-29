@@ -50,7 +50,7 @@ export const fetchRolesPermissions = async (page: number, query: string = '', pe
   const token = cookies.token; // Access the token cookie directly
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -90,7 +90,7 @@ export const updateRolePermissions = async (roleId: number, permissions: number[
   const token = cookies.token; // Access the token cookie directly
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {

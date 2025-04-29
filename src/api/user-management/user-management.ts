@@ -58,7 +58,7 @@ export const fetchUsers = async (page: number, query: string = '', per_page: num
   const token = cookies.token; // Access the token cookie directly
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   // Construct the URL with pagination and search query
@@ -80,7 +80,7 @@ export const updateRoles = async (userId: number, name: string, roles: string[])
   const token = cookies.token; // Extract the token
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   // Construct the payload
@@ -125,7 +125,7 @@ export const addUser = async (userData: {
   const token = cookies.token; // Extract the token
 
   if (!token) {
-    throw new Error('No token found'); // Token validation
+    throw new Error('Silahkan Login'); // Token validation
   }
 
   // Construct the payload for creating a user

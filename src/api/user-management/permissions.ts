@@ -29,7 +29,7 @@ export const fetchPermissions = async (page: number, query: string = '', per_pag
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -55,7 +55,7 @@ export const addPermission = async (permissionData: AddPermissionRequest): Promi
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -82,7 +82,7 @@ export const updatePermission = async (id: number, permissionData: AddPermission
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -109,7 +109,7 @@ export const deletePermission = async (id: number): Promise<PermissionsResponse>
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {

@@ -61,7 +61,7 @@ export const fetchMasterItems = async (page: number, query: string = '', per_pag
   const token = cookies.token; // Access the token cookie directly
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   // Construct the URL with pagination and search query
@@ -86,7 +86,7 @@ export const addMasterItems = async (
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   const skuSet = new Set<string>();
@@ -144,7 +144,7 @@ export const updateMasterItem = async (id: number, nama_barang: string): Promise
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   const response = await api.put<Item>(
@@ -166,7 +166,7 @@ export const deleteMasterItem = async (id: number): Promise<{ success: boolean; 
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
   
   const response = await api.delete<{ success: boolean; message: string }>(
