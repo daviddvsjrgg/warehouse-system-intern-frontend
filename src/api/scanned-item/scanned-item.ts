@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 import api from '@/services/axiosInstance';
 import { getUserIdFromToken } from '@/api/auth/auth';
 import { parseCookies } from 'nookies';
@@ -67,7 +68,7 @@ export const fetchScannedItems = async (
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -119,51 +120,6 @@ export const fetchScannedItems = async (
   }
 };
 
-export const fetchScannedItemsBatch = async (
-  invoiceNumbers: string[],
-  barcodeSNs: string[],
-  startDate?: string,
-  endDate?: string
-): Promise<FetchScannedItem[]> => {
-  const cookies = parseCookies();
-  const token = cookies.token;
-
-  if (!token) {
-    throw new Error('No token found');
-  }
-
-  try {
-    // Prepare query parameters
-    const queryParams = new URLSearchParams();
-    invoiceNumbers.forEach(invoiceNumber =>
-      queryParams.append('invoice_numbers[]', invoiceNumber)
-    );
-    barcodeSNs.forEach(barcodeSN =>
-      queryParams.append('barcode_sns[]', barcodeSN)
-    );
-    if (startDate) queryParams.append('start_date', startDate);
-    if (endDate) queryParams.append('end_date', endDate);
-
-    const response = await api.get<ApiResponse>(
-      `${process.env.NEXT_PUBLIC_SCAN_SN_API}?${queryParams.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to fetch scanned items');
-    }
-
-    return response.data.data.data;
-  } catch (error) {
-    throw new Error((error as Error).message || "Unknown Error");
-  }
-};
-
-
 export const getTotalItemScannedItems = async (
   page: number = 1,
   perPage: number = 5,
@@ -178,7 +134,7 @@ export const getTotalItemScannedItems = async (
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   try {
@@ -237,7 +193,7 @@ export const addScannedItems = async (items: { id: number; sku: string; invoiceN
   const token = cookies.token; // Get token from cookies
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   // Extract user ID from cookies or an API call
@@ -280,7 +236,7 @@ export const updateScannedItemSN = async (id: number, qty: number, barcode_sn: s
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   const response = await api.put<ScannedItem>(
@@ -301,7 +257,7 @@ export const updateScannedItemInvoice = async (id: number, invoice_number: strin
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   const response = await api.put<ScannedItem>(
@@ -322,7 +278,7 @@ export const updateScannedItemAllInvoice = async (editInvoice: string, editTempI
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
 
   const response = await api.put<ScannedItem>(
@@ -344,7 +300,7 @@ export const deleteScannedItem = async (id: number): Promise<{ success: boolean;
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token found');
+    throw new Error('Silahkan Login');
   }
   
   const response = await api.delete<{ success: boolean; message: string }>(
@@ -357,4 +313,43 @@ export const deleteScannedItem = async (id: number): Promise<{ success: boolean;
   );
 
   return response.data;
+};
+
+export const fetchCheckDuplicateSN = async (
+  invoiceNumbers: any[],  
+  barcodeSNs: any[]        
+): Promise<any> => {
+  const cookies = parseCookies();
+  const token = cookies.token;
+
+  if (!token) {
+    throw new Error('Silahkan Login');
+  }
+
+  // Make sure the payload matches the structure you want
+  const queryParams = new URLSearchParams();
+    invoiceNumbers.forEach(invoiceNumber =>
+      queryParams.append('invoices[]', invoiceNumber)
+    );
+    barcodeSNs.forEach(barcodeSN =>
+      queryParams.append('barcodes[]', barcodeSN)
+    );
+
+  try {
+    const response = await api.get<any>(
+      `${process.env.NEXT_PUBLIC_SCAN_SN_API}/check-duplicate?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    console.log("data fetch: " + JSON.stringify(response.data));
+    return response.data; 
+    
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || error.message || "Unknown Error";
+    console.log("error:" + errorMessage)
+    throw new Error(errorMessage);
+  }
 };

@@ -24,20 +24,12 @@ const Home = () => {
                 Selamat Datang di Warehouse System
               </h1>
               <p className="mt-2 dark:text-gray-300">
-                Terakhir Push: <span className="font-medium">Jumat, 10 Januari 2025, 14:00 WIB</span>
+                Terakhir Push: <span className="font-medium">Selasa, 29 April 2025, 15:00 WIB</span>
               </p>
 
               {/* Links Section */}
               <p className="dark:text-gray-300">
-                API Dokumentasi:{" "}
-                <a
-                  className="text-blue-500 dark:text-blue-400 underline"
-                  href="https://documenter.getpostman.com/view/10569515/2sAY4xA2Ec"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  dokumentasi
-                </a>
+                *Akan logout otomatis setelah tidak aktif selama 1 Jam
               </p>
             </div>
           </div>

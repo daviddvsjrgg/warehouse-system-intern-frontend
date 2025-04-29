@@ -1,7 +1,7 @@
 /* eslint-disable */ 
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchMasterItems, Item } from '@/api/master-item/master-item';
-import { addScannedItems, fetchScannedItems, fetchScannedItemsBatch } from '@/api/scanned-item/scanned-item';
+import { addScannedItems, fetchCheckDuplicateSN, fetchScannedItems } from '@/api/scanned-item/scanned-item';
 import useDebounce from '@/hooks/useDebounce';
 import * as XLSX from 'xlsx';
 interface PreviewItem {
@@ -43,6 +43,7 @@ const AddScanned = () => {
       selectedItem: '',
       barcodeSN: '',
       submitError: '',
+      duplicateErrorSubmit: '',
       submitInvoiceNumbers: [] as string[],  // To hold errors for invoice numbers
       submitBarcodeSNs: [] as string[],
     });
@@ -140,6 +141,7 @@ const AddScanned = () => {
       selectedItem: '',
       barcodeSN: '',
       submitError: '',
+      duplicateErrorSubmit: '',
       submitInvoiceNumbers: [] as string[],
       submitBarcodeSNs: [] as string[],
     });
@@ -257,19 +259,26 @@ const AddScanned = () => {
     try {
       const invoiceNumbers = itemList.map((item) => item.invoiceNumber.toLowerCase());
       const barcodeSNs = itemList.map((item) => item.barcode_sn.toLowerCase());
-  
-      const chunkSize = 50; // Adjust if needed
+
+      const chunkSize = 50; 
       const invoiceChunks = chunkArray(invoiceNumbers, chunkSize);
       const barcodeChunks = chunkArray(barcodeSNs, chunkSize);
-  
-      let existingItems: any[] = [];
-  
+
+      // Ensure fetchCheckDuplicateSN handles the chunked arrays correctly
+
+      let existingInvoices = new Set<string>();
+      let existingBarcodes = new Set<string>();
+
       // **Parallel API Calls** for Checking Duplicates
       const checkPromises = invoiceChunks.map((batchInvoices, index) => {
         const batchBarcodes = barcodeChunks[index] || [];
-        return fetchScannedItemsBatch(batchInvoices, batchBarcodes)
-          .then((batchExistingItems) => {
-            existingItems = existingItems.concat(batchExistingItems);
+        return fetchCheckDuplicateSN(batchInvoices, batchBarcodes)
+          .then((response) => {
+            const data = response?.data;
+            if (data) {
+              data.invoices?.forEach((inv: string) => existingInvoices.add(inv.toLowerCase()));
+              data.barcodes?.forEach((bc: string) => existingBarcodes.add(bc.toLowerCase()));
+            }
             setProgressCheckDuplicate(Math.round(((index + 1) / invoiceChunks.length) * 100));
           })
           .catch((error) => {
@@ -281,24 +290,25 @@ const AddScanned = () => {
             setLoading(false);
           });
       });
-  
+
       await Promise.all(checkPromises); // Wait for all requests to complete
-  
+
       const duplicateInvoices = new Set<string>();
       const duplicateBarcodes = new Set<string>();
-  
+
       for (const item of itemList) {
         const lowerInvoice = item.invoiceNumber.toLowerCase();
         const lowerBarcode = item.barcode_sn.toLowerCase();
-  
-        if (existingItems.some((existing) => existing.invoice_number.toLowerCase() === lowerInvoice)) {
+
+        if (existingInvoices.has(lowerInvoice)) {
           duplicateInvoices.add(item.invoiceNumber);
         }
-        if (existingItems.some((existing) => existing.barcode_sn.toLowerCase() === lowerBarcode)) {
+        if (existingBarcodes.has(lowerBarcode)) {
           duplicateBarcodes.add(item.barcode_sn);
         }
       }
-  
+
+      // Local check for duplicate barcodes within current itemList
       const barcodeSet = new Set<string>();
       for (const item of itemList) {
         const barcode = item.barcode_sn.toLowerCase();
@@ -308,19 +318,22 @@ const AddScanned = () => {
         }
         barcodeSet.add(barcode);
       }
-  
+
       if (duplicateInvoices.size || duplicateBarcodes.size) {
         let errorMessage = "";
         if (duplicateInvoices.size) {
-          errorMessage += "Duplicate Invoice Numbers:<br>" + Array.from(duplicateInvoices).map((inv, i) => `${i + 1}. Invoice "${inv}"<br>`).join("");
+          errorMessage += "Duplicate Invoice Numbers:<br>" +
+            Array.from(duplicateInvoices).map((inv, i) => `${i + 1}. Invoice "${inv}"<br>`).join("");
         }
         if (duplicateBarcodes.size) {
-          errorMessage += "<br>Duplicate Barcode SNs:<br>" + Array.from(duplicateBarcodes).map((bar, i) => `${i + 1}. Barcode "${bar}"<br>`).join("");
+          errorMessage += "<br>Duplicate Barcode SNs:<br>" +
+            Array.from(duplicateBarcodes).map((bar, i) => `${i + 1}. Barcode "${bar}"<br>`).join("");
         }
-  
+
         setError((prev) => ({
           ...prev,
           submitError: errorMessage.trim(),
+          duplicateErrorSubmit: errorMessage.trim(),
         }));
         setLoading(false);
         return;
@@ -360,6 +373,7 @@ const AddScanned = () => {
         selectedItem: "",
         barcodeSN: "",
         submitError: "",
+        duplicateErrorSubmit: "",
         submitInvoiceNumbers: [] as string[],
         submitBarcodeSNs: [] as string[],
       });
@@ -1228,10 +1242,13 @@ const AddScanned = () => {
                     <p className="text-sm mb-6 text-gray-700">Data akan masuk kedalam database.</p>
               
                     {error.submitError && (
-                      <div
-                        className="mt-3 text-red-600 text-sm"
-                        dangerouslySetInnerHTML={{ __html: error.submitError }}
-                      />
+                      <>
+                        <div className='mt-3 text-sm text-black dark:text-white'>Data duplikat tidak masuk kedalam database!</div>
+                        <div
+                          className="mt-3 text-red-600 text-sm"
+                          dangerouslySetInnerHTML={{ __html: error.submitError }}
+                          />
+                      </>
                     )}
               
                     {/* Progress for Checking Duplicates */}
