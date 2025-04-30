@@ -1,6 +1,7 @@
+/* eslint-disable */ 
+
 "use client";
 
-import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -95,12 +96,11 @@ const Navbar = () => {
           className="btn btn-ghost btn-circle avatar"
         >
           <div className="w-10 rounded-full">
-            <Image
+            <img
               src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
               alt="User Avatar"
               width={100}
               height={100}
-              priority
             />
           </div>
         </div>

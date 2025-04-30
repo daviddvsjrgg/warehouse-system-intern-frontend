@@ -29,7 +29,10 @@ const Home = () => {
 
               {/* Links Section */}
               <p className="dark:text-gray-300">
-                *Akan logout otomatis setelah tidak aktif selama 1 Jam
+                *Akan logout otomatis setelah tidak aktif selama 1 Jam.
+              </p>
+              <p className="dark:text-gray-300">
+                *Jika Sidebar/Menu Tidak muncul, silahkan login!
               </p>
             </div>
           </div>
