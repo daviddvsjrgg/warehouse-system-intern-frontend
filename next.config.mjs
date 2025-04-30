@@ -8,8 +8,6 @@ const nextConfig = {
         },
       ],
   },
-  output: 'export', // Full static export
-  trailingSlash: true, // Needed for static routing
 };
 
 export default nextConfig;
